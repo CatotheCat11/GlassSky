@@ -25,7 +25,7 @@ import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
-import com.example.glasssky.R;
+import com.cato.glasssky.R;
 import com.github.barcodeeye.scan.CaptureActivity;
 
 /**

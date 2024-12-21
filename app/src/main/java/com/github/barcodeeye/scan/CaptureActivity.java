@@ -36,7 +36,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 import com.github.barcodeeye.BaseGlassActivity;
-import com.example.glasssky.R;
+import com.cato.glasssky.R;
 import com.github.barcodeeye.image.ImageManager;
 import com.github.barcodeeye.migrated.AmbientLightManager;
 import com.github.barcodeeye.migrated.BeepManager;

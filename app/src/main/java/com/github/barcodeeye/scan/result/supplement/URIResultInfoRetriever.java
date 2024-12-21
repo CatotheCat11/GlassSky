@@ -23,7 +23,7 @@ import java.net.URISyntaxException;
 import android.content.Context;
 import android.widget.TextView;
 
-import com.example.glasssky.R;
+import com.cato.glasssky.R;
 import com.github.barcodeeye.migrated.HttpHelper;
 import com.google.zxing.client.result.URIParsedResult;
 

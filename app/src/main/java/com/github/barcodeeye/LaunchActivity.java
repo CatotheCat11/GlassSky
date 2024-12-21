@@ -5,7 +5,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 
-import com.example.glasssky.R;
+import com.cato.glasssky.R;
 import com.github.barcodeeye.scan.CaptureActivity;
 
 public class LaunchActivity extends Activity {

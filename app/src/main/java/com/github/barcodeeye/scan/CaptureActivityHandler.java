@@ -30,7 +30,7 @@ import android.os.Message;
 import android.provider.Browser;
 import android.util.Log;
 
-import com.example.glasssky.R;
+import com.cato.glasssky.R;
 import com.github.barcodeeye.scan.ui.ViewfinderView.ViewfinderResultPointCallback;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.DecodeHintType;

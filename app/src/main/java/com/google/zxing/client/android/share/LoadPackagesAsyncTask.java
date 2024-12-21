@@ -27,7 +27,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListAdapter;
-import com.example.glasssky.R;
+import com.cato.glasssky.R;
 
 import java.util.ArrayList;
 import java.util.Collections;
