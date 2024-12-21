@@ -506,10 +506,6 @@ public class Timeline extends Activity {
         mCardScrollView.animate(position, CardScrollView.Animation.INSERTION);
     }
     private void SetPosts(JSONArray postsArray) {
-        if (mIndeterminate != null) {
-            mIndeterminate.hide();
-            mIndeterminate = null;
-        }
         try {
             for (int i = 0; i < postsArray.length(); i++) {
                 JSONObject post = postsArray.getJSONObject(i).getJSONObject("post");
@@ -566,6 +562,10 @@ public class Timeline extends Activity {
             }
             mAdapter.notifyDataSetChanged();
             loading = false;
+            if (mIndeterminate != null) {
+                mIndeterminate.hide();
+                mIndeterminate = null;
+            }
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }
