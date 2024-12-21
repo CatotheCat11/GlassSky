@@ -28,6 +28,7 @@ import com.google.android.glass.media.Sounds;
 import com.google.android.glass.widget.CardBuilder;
 import com.google.android.glass.widget.CardScrollAdapter;
 import com.google.android.glass.widget.CardScrollView;
+import com.google.android.glass.widget.Slider;
 
 import org.conscrypt.Conscrypt;
 import org.json.JSONArray;
@@ -71,6 +72,8 @@ public class PostActivity extends Activity {
     private static CardScrollView mCardScrollView;
     private ExampleCardScrollAdapter mAdapter;
     private FileObserver observer;
+    private Slider mSlider;
+    private Slider.Indeterminate mIndeterminate;
     Bitmap bitmap;
     String text = "";
     String thumbnailPath = "";
@@ -107,6 +110,7 @@ public class PostActivity extends Activity {
         mAdapter = new ExampleCardScrollAdapter();
         mCardScrollView.setAdapter(mAdapter);
         mCardScrollView.activate();
+        mSlider = Slider.from(mCardScrollView);
         setupClickListener();
         setContentView(mCardScrollView);
     }
@@ -200,6 +204,7 @@ public class PostActivity extends Activity {
     }
     private void post(String text, Bitmap image, String video) {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        mIndeterminate = mSlider.startIndeterminate();
         Log.i(TAG, "Posting...");
         mCards.get(3).setText("Posting");
         SharedPreferences sharedPref = PostActivity.this.getSharedPreferences(
@@ -267,6 +272,7 @@ public class PostActivity extends Activity {
                                                         AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                                                         am.playSoundEffect(Sounds.SUCCESS);
                                                         Log.d("Success", "Successfully posted!");
+                                                        mIndeterminate.hide();
                                                         finish();
                                                     }
 
@@ -334,6 +340,7 @@ public class PostActivity extends Activity {
                                                         AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                                                         am.playSoundEffect(Sounds.SUCCESS);
                                                         Log.d("Success", "Successfully posted!");
+                                                        mIndeterminate.hide();
                                                         finish();
                                                     }
 
@@ -392,6 +399,7 @@ public class PostActivity extends Activity {
                                                 AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                                                 am.playSoundEffect(Sounds.SUCCESS);
                                                 Log.d("Success", "Successfully posted!");
+                                                mIndeterminate.hide();
                                                 finish();
                                             }
 
