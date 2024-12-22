@@ -53,7 +53,9 @@ public class Timeline extends Activity {
     Boolean like;
     Boolean repost;
     Boolean reply;
-    Boolean follow;
+    Boolean following;
+    Boolean muted;
+    Boolean blocked;
     Boolean loading = false;
     int extraCards;
     private Slider mSlider;
@@ -319,7 +321,8 @@ public class Timeline extends Activity {
                     });
         }
         if (mode.equals("author")) {
-            HttpsUtils.makePostRequest("https://bsky.social/xrpc/app.bsky.actor.getProfile?actor=" + uri + "&limit=" + limit, null, access_token, "GET",
+            extraCards = 4;
+            HttpsUtils.makePostRequest("https://bsky.social/xrpc/app.bsky.actor.getProfile?actor=" + uri, null, access_token, "GET",
                     new HttpsUtils.HttpCallback() {
                         @Override
                         public void onSuccess(String response) {
@@ -346,15 +349,32 @@ public class Timeline extends Activity {
                                                             String followersCount = Author.getString("followersCount");
                                                             String followsCount = Author.getString("followsCount");
                                                             String postsCount = Author.getString("postsCount");
-                                                            //TODO: Add block and mute options
+                                                            if (Author.getJSONObject("viewer").has("blocking")) {
+                                                                mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
+                                                                        .setText("Unblock"));
+                                                                blocked = true;
+                                                            } else {
+                                                                mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
+                                                                        .setText("Block"));
+                                                                blocked = false;
+                                                            }
+                                                            if (Author.getJSONObject("viewer").getBoolean("muted")) {
+                                                                mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
+                                                                        .setText("Unmute"));
+                                                                muted = true;
+                                                            } else {
+                                                                mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
+                                                                        .setText("Mute"));
+                                                                muted = false;
+                                                            }
                                                             if (Author.getJSONObject("viewer").has("following")) {
                                                                 mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
                                                                         .setText("Unfollow"));
-                                                                follow = true;
+                                                                following = true;
                                                             } else {
                                                                 mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
                                                                         .setText("Follow"));
-                                                                follow = false;
+                                                                following = false;
                                                             }
                                                             authorCard
                                                                     .addImage(bitmap)
@@ -364,16 +384,18 @@ public class Timeline extends Activity {
                                                                     .setFootnote(followersCount + " followers, " + followsCount + " following, " + postsCount + " posts");
                                                             mCards.add(authorCard);
                                                             mAdapter.notifyDataSetChanged();
-                                                            extraCards = 2;
                                                             mCardScrollView.setSelection(extraCards - 1);
-                                                            HttpsUtils.makePostRequest("https://bsky.social/xrpc/app.bsky.feed.getAuthorFeed?actor=" + uri + "&filter=posts_and_author_threads", null, access_token, "GET",
+                                                            HttpsUtils.makePostRequest("https://bsky.social/xrpc/app.bsky.feed.getAuthorFeed?actor=" + uri + "&filter=posts_and_author_threads&limit=" + limit, null, access_token, "GET",
                                                                     new HttpsUtils.HttpCallback() {
 
                                                                         @Override
                                                                         public void onSuccess(String response) {
                                                                             try {
-                                                                                cursor = new JSONObject(response).getString("cursor");
-                                                                                responseArray = new JSONObject(response).getJSONArray("feed");
+                                                                                JSONObject authorFeed = new JSONObject(response);
+                                                                                if (authorFeed.has("cursor")) {
+                                                                                    cursor = authorFeed.getString("cursor");
+                                                                                }
+                                                                                responseArray = authorFeed.getJSONArray("feed");
                                                                             } catch (
                                                                                     JSONException e) {
                                                                                 throw new RuntimeException(e);
@@ -403,15 +425,36 @@ public class Timeline extends Activity {
                                                     String followersCount = Author.getString("followersCount");
                                                     String followsCount = Author.getString("followsCount");
                                                     String postsCount = Author.getString("postsCount");
-                                                    //TODO: Add block and mute options here too
+                                                    if (Author.getJSONObject("viewer").has("blocking")) {
+                                                        mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
+                                                                .setText("Unblock"));
+                                                        blocked = true;
+                                                    } else {
+                                                        mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
+                                                                .setText("Block"));
+                                                        blocked = false;
+                                                    }
+                                                    if (Author.getJSONObject("viewer").has("muted")) {
+                                                        mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
+                                                                .setText("Unmute"));
+                                                        muted = true;
+                                                    } else {
+                                                        mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
+                                                                .setText("Mute"));
+                                                        muted = false;
+                                                    }
                                                     if (Author.getJSONObject("viewer").has("following")) {
                                                         mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
                                                                 .setText("Unfollow"));
-                                                        follow = true;
+                                                        following = true;
                                                     } else {
-                                                        mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
-                                                                .setText("Follow"));
-                                                        follow = false;
+                                                        CardBuilder followCard = new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
+                                                                .setText("Follow");
+                                                        if (blocked = true) {
+                                                            followCard.setFootnote("You must unblock this user to follow them.");
+                                                        }
+                                                        mCards.add(followCard);
+                                                        following = false;
                                                     }
                                                     authorCard
                                                             .setText(description)
@@ -420,7 +463,6 @@ public class Timeline extends Activity {
                                                             .setFootnote(followersCount + " followers, " + followsCount + " following, " + postsCount + " posts");
                                                     mCards.add(authorCard);
                                                     mAdapter.notifyDataSetChanged();
-                                                    extraCards = 2;
                                                     mCardScrollView.setSelection(extraCards - 1);
                                                     HttpsUtils.makePostRequest("https://bsky.social/xrpc/app.bsky.feed.getAuthorFeed?actor=" + uri + "&filter=posts_and_author_threads", null, access_token, "GET",
                                                             new HttpsUtils.HttpCallback() {
@@ -515,7 +557,10 @@ public class Timeline extends Activity {
                 for (int i = 0; i < postsArray.length(); i++) {
                     JSONObject post = postsArray.getJSONObject(i).getJSONObject("post");
                     String text = post.getJSONObject("record").getString("text");
-                    String heading = post.getJSONObject("author").getString("displayName");
+                    String heading = "";
+                    if (post.getJSONObject("author").has("displayName")) {
+                        heading = post.getJSONObject("author").getString("displayName");
+                    }
                     String subHeading = post.getJSONObject("author").getString("handle");
                     String likeCount = post.getString("likeCount");
                     String replyCount = post.getString("replyCount");
@@ -633,7 +678,7 @@ public class Timeline extends Activity {
                         timelineIntent.putExtra("uri", authorDid);
                         timelineIntent.putExtra("mode", "author");
                         startActivity(timelineIntent);
-                    } else if (position == 0 && mode.equals("author")) { // Follow function
+                    } else if (position == 0 && mode.equals("author")) { // Block function
                         mIndeterminate = mSlider.startIndeterminate();
                         HttpsUtils.makePostRequest("https://bsky.social/xrpc/com.atproto.server.getSession", null, access_token, "GET",
                                 new HttpsUtils.HttpCallback() {
@@ -642,7 +687,152 @@ public class Timeline extends Activity {
                                         // Handle successful response
                                         try {
                                             String did = new JSONObject(response).getString("did");
-                                            if (follow) { // Unfollowing
+                                            if (blocked) { // Unblock
+                                                JSONObject unblockObj = new JSONObject();
+                                                String followUri = Author.getJSONObject("viewer").getString("blocking");
+                                                // Define the regex pattern to match the rkey
+                                                String pattern = ".*/([^/]+)$";
+
+                                                // Compile the regex
+                                                Pattern regex = Pattern.compile(pattern);
+                                                Matcher matcher = regex.matcher(followUri);
+                                                String rkey = "unset";
+
+                                                if (matcher.find()) {
+                                                    // Extract the rkey (group 1 in the regex)
+                                                    rkey = matcher.group(1);
+                                                } else {
+                                                    Log.e("Unlike error", "Unable to get rkey from like uri.");
+                                                }
+                                                unblockObj.put("repo", did);
+                                                unblockObj.put("collection", "app.bsky.graph.block");
+                                                unblockObj.put("rkey", rkey);
+                                                HttpsUtils.makePostRequest("https://bsky.social/xrpc/com.atproto.repo.deleteRecord", unblockObj, access_token, "POST",
+                                                        new HttpsUtils.HttpCallback() {
+                                                            @Override
+                                                            public void onSuccess(String response) {
+                                                                recreate();
+
+                                                            }
+
+                                                            @Override
+                                                            public void onError(String errorMessage) {
+                                                                am.playSoundEffect(Sounds.ERROR);
+                                                            }
+                                                        });
+
+
+                                            } else { // Blocking
+                                                JSONObject blockObj = new JSONObject();
+                                                JSONObject record = new JSONObject();
+                                                blockObj.put("collection", "app.bsky.graph.block");
+                                                blockObj.put("repo", did);
+                                                String authorDid = Author.getString("did");
+                                                record.put("$type", "app.bsky.graph.block");
+                                                record.put("subject", authorDid);
+                                                String timestamp = sdf.format(new Date());
+                                                record.put("createdAt", timestamp);
+                                                blockObj.put("record", record);
+                                                HttpsUtils.makePostRequest("https://bsky.social/xrpc/com.atproto.repo.createRecord", blockObj, access_token, "POST",
+                                                        new HttpsUtils.HttpCallback() {
+                                                            @Override
+                                                            public void onSuccess(String response) {
+                                                                am.playSoundEffect(Sounds.SUCCESS);
+                                                                recreate();
+
+                                                            }
+
+                                                            @Override
+                                                            public void onError(String errorMessage) {
+                                                                am.playSoundEffect(Sounds.ERROR);
+                                                            }
+                                                        });
+                                            }
+                                        } catch (JSONException e) {
+                                            throw new RuntimeException(e);
+                                        }
+
+                                    }
+
+                                    @Override
+                                    public void onError(String errorMessage) {
+                                        if (errorMessage.contains("ExpiredToken")) {
+                                            Log.e("Session Refresh Error", "The token has expired.");
+                                        } else {
+                                            Log.e("Session Refresh Error", "An error occurred.");
+                                        }
+                                    }
+                                });
+                    } else if (position == 1 && mode.equals("author")) { // Mute function
+                        mIndeterminate = mSlider.startIndeterminate();
+                        HttpsUtils.makePostRequest("https://bsky.social/xrpc/com.atproto.server.getSession", null, access_token, "GET",
+                                new HttpsUtils.HttpCallback() {
+                                    @Override
+                                    public void onSuccess(String response) {
+                                        // Handle successful response
+                                        try {
+                                            String did = new JSONObject(response).getString("did");
+                                            if (muted) { // Unmuting
+                                                JSONObject unmuteObj = new JSONObject();
+                                                String authorDid = Author.getString("did");
+                                                unmuteObj.put("actor", authorDid);
+                                                HttpsUtils.makePostRequest("https://bsky.social/xrpc/app.bsky.graph.unmuteActor", unmuteObj, access_token, "POST",
+                                                        new HttpsUtils.HttpCallback() {
+                                                            @Override
+                                                            public void onSuccess(String response) {
+                                                                recreate();
+
+                                                            }
+
+                                                            @Override
+                                                            public void onError(String errorMessage) {
+                                                                am.playSoundEffect(Sounds.ERROR);
+                                                            }
+                                                        });
+                                            } else { // Muting
+                                                JSONObject muteObj = new JSONObject();
+                                                String authorDid = Author.getString("did");
+                                                muteObj.put("actor", authorDid);
+                                                HttpsUtils.makePostRequest("https://bsky.social/xrpc/app.bsky.graph.muteActor", muteObj, access_token, "POST",
+                                                        new HttpsUtils.HttpCallback() {
+                                                            @Override
+                                                            public void onSuccess(String response) {
+                                                                am.playSoundEffect(Sounds.SUCCESS);
+                                                                recreate();
+
+                                                            }
+
+                                                            @Override
+                                                            public void onError(String errorMessage) {
+                                                                am.playSoundEffect(Sounds.ERROR);
+                                                            }
+                                                        });
+                                            }
+                                        } catch (JSONException e) {
+                                            throw new RuntimeException(e);
+                                        }
+
+                                    }
+
+                                    @Override
+                                    public void onError(String errorMessage) {
+                                        if (errorMessage.contains("ExpiredToken")) {
+                                            Log.e("Session Refresh Error", "The token has expired.");
+                                        } else {
+                                            Log.e("Session Refresh Error", "An error occurred.");
+                                        }
+                                    }
+                                });
+                    } else if (position == 2 && mode.equals("author") && !blocked) { // Follow function
+                        mIndeterminate = mSlider.startIndeterminate();
+                        HttpsUtils.makePostRequest("https://bsky.social/xrpc/com.atproto.server.getSession", null, access_token, "GET",
+                                new HttpsUtils.HttpCallback() {
+                                    @Override
+                                    public void onSuccess(String response) {
+                                        // Handle successful response
+                                        try {
+                                            String did = new JSONObject(response).getString("did");
+                                            if (following) { // Unfollowing
                                                 JSONObject unfollowObj = new JSONObject();
                                                 String followUri = Author.getJSONObject("viewer").getString("following");
                                                 // Define the regex pattern to match the rkey
