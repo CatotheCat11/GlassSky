@@ -9,11 +9,13 @@ import android.view.WindowManager;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.MediaItem;
+import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultDataSource;
 import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
+import com.google.android.glass.widget.Slider;
 
 
 public class VideoActivity extends Activity {
@@ -21,6 +23,8 @@ public class VideoActivity extends Activity {
     private PlayerView playerView;
     private String url = "";
     private GestureDetector mGestureDetector;
+    private Slider mSlider;
+    private Slider.Indeterminate mIndeterminate;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -30,6 +34,8 @@ public class VideoActivity extends Activity {
         mGestureDetector = createGestureDetector(this);
 
         playerView = findViewById(R.id.playerView);
+        mSlider = Slider.from(playerView);
+        mIndeterminate = mSlider.startIndeterminate();
 
         // Use the custom HttpDataSource.Factory
         DataSource.Factory dataSourceFactory = new DefaultDataSource.Factory(
@@ -39,6 +45,16 @@ public class VideoActivity extends Activity {
         player = new ExoPlayer.Builder(this).setMediaSourceFactory(
                 new com.google.android.exoplayer2.source.DefaultMediaSourceFactory(dataSourceFactory)
         ).build();
+        player.addListener(new Player.Listener() {
+            @Override
+            public void onPlaybackStateChanged(int state) {
+                if (state == ExoPlayer.STATE_READY) {
+                    mIndeterminate.hide();
+                    mIndeterminate = null;
+                    player.removeListener(this);
+                }
+            }
+        });
 
         playerView.setPlayer(player);
 
