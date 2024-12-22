@@ -3,6 +3,8 @@ package com.cato.glasssky;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.util.LruCache;
 
@@ -94,45 +96,38 @@ public class ImageRequest {
     public interface ImageCallback {
         void onImageLoaded(Bitmap bitmap);
     }
-    // Resize and crop bitmap to fit Google Glass resolution
-    private static Bitmap processBitmap(Bitmap originalBitmap, Integer newWidth, Integer newHeight) {
+    private static Bitmap processBitmap(Bitmap originalBitmap, Integer targetWidth, Integer targetHeight) {
         if (originalBitmap == null) return null;
 
         Bitmap scaledBitmap = null;
-        Bitmap croppedBitmap = null;
         Bitmap finalBitmap = null;
 
         try {
-            float scaleFactor = Math.min((float) newWidth / originalBitmap.getWidth(),
-                    (float) newHeight / originalBitmap.getHeight());
+            finalBitmap = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.RGB_565);
+            Canvas canvas = new Canvas(finalBitmap);
+            canvas.drawColor(Color.BLACK);
 
-            int scaledWidth = Math.round(originalBitmap.getWidth() * scaleFactor);
-            int scaledHeight = Math.round(originalBitmap.getHeight() * scaleFactor);
+            float originalAspectRatio = (float) originalBitmap.getWidth() / originalBitmap.getHeight();
+            float targetAspectRatio = (float) targetWidth / targetHeight;
 
-            // Create scaled bitmap
+            int scaledWidth, scaledHeight;
+            float dx = 0, dy = 0;
+
+            if (originalAspectRatio > targetAspectRatio) {
+                scaledWidth = targetWidth;
+                scaledHeight = Math.round(targetWidth / originalAspectRatio);
+                dy = (targetHeight - scaledHeight) / 2f;
+            } else {
+                scaledHeight = targetHeight;
+                scaledWidth = Math.round(targetHeight * originalAspectRatio);
+                dx = (targetWidth - scaledWidth) / 2f;
+            }
+
+            // Scale the original bitmap
             scaledBitmap = Bitmap.createScaledBitmap(originalBitmap, scaledWidth, scaledHeight, true);
 
-            int cropX = Math.max(0, (scaledWidth - newWidth) / 2);
-            int cropY = Math.max(0, (scaledHeight - newHeight) / 2);
-
-            // Create cropped bitmap
-            croppedBitmap = Bitmap.createBitmap(
-                    scaledBitmap,
-                    cropX,
-                    cropY,
-                    Math.min(newWidth, scaledWidth),
-                    Math.min(newHeight, scaledHeight)
-            );
-
-            // Compress to byte array
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            croppedBitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream);
-            byte[] compressedData = outputStream.toByteArray();
-
-            // Create final bitmap with RGB_565 config
-            BitmapFactory.Options options = new BitmapFactory.Options();
-            options.inPreferredConfig = Bitmap.Config.RGB_565;
-            finalBitmap = BitmapFactory.decodeByteArray(compressedData, 0, compressedData.length, options);
+            // Draw the scaled bitmap centered on the black background
+            canvas.drawBitmap(scaledBitmap, dx, dy, null);
 
             return finalBitmap;
 
@@ -140,12 +135,9 @@ public class ImageRequest {
             System.gc();
             return null;
         } finally {
-            // Clean up intermediate bitmaps
+            // Clean up intermediate bitmap
             if (scaledBitmap != null && scaledBitmap != originalBitmap && scaledBitmap != finalBitmap) {
                 scaledBitmap.recycle();
-            }
-            if (croppedBitmap != null && croppedBitmap != scaledBitmap && croppedBitmap != finalBitmap) {
-                croppedBitmap.recycle();
             }
         }
     }
