@@ -42,7 +42,7 @@ public class ImageRequest {
         }
     };
     static OkHttpClient okHttpClient = null;
-    private static final ExecutorService executor = Executors.newFixedThreadPool(10);
+    private static final ExecutorService executor = Executors.newFixedThreadPool(1);
     public static void makeImageRequest(Context context, String url, OkHttpClient client, ImageCallback callback) {
         Bitmap cachedBitmap = memoryCache.get(url);
         if (cachedBitmap != null) {
