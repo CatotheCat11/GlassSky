@@ -34,11 +34,15 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import okhttp3.OkHttpClient;
+
+//TODO: Improve performance
 
 public class Timeline extends Activity {
     private List<CardBuilder> mCards;
@@ -63,6 +67,8 @@ public class Timeline extends Activity {
     String videoUrl = "";
     static int REPLY_REQUEST = 0;
     OkHttpClient client;
+    static final int limit = 10;
+    private static final ExecutorService executor = Executors.newFixedThreadPool(10);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,7 +96,7 @@ public class Timeline extends Activity {
         access_token = sharedPref.getString(getString(R.string.access_token), "unset");
         loading=true;
         if (mode.equals("algorithm")) {
-            HttpsUtils.makePostRequest("https://bsky.social/xrpc/app.bsky.feed.getFeed?feed="+uri, null, access_token, "GET",
+            HttpsUtils.makePostRequest("https://bsky.social/xrpc/app.bsky.feed.getFeed?feed=" + uri + "&limit=" + limit, null, access_token, "GET",
                     new HttpsUtils.HttpCallback() {
                         @Override
                         public void onSuccess(String response) {
@@ -266,9 +272,8 @@ public class Timeline extends Activity {
                                         public void onImageLoaded(Bitmap bitmap) {
                                             card[0] = new CardBuilder(Timeline.this, CardBuilder.Layout.TITLE)
                                                     .setText("Tap to play video")
-                                                    .setTimestamp(timestamp)
                                                     .addImage(bitmap)
-                                                    .setAttributionIcon(R.drawable.play_arrow_64);;
+                                                    .setIcon(R.drawable.play_arrow_64);
                                             mCards.add(card[0]);
                                             try {
                                                 responseArray = new JSONObject(response).getJSONObject("thread").getJSONArray("replies");
@@ -315,7 +320,7 @@ public class Timeline extends Activity {
                     });
         }
         if (mode.equals("author")) {
-            HttpsUtils.makePostRequest("https://bsky.social/xrpc/app.bsky.actor.getProfile?actor=" + uri, null, access_token, "GET",
+            HttpsUtils.makePostRequest("https://bsky.social/xrpc/app.bsky.actor.getProfile?actor=" + uri + "&limit=" + limit, null, access_token, "GET",
                     new HttpsUtils.HttpCallback() {
                         @Override
                         public void onSuccess(String response) {
@@ -506,69 +511,73 @@ public class Timeline extends Activity {
         mCardScrollView.animate(position, CardScrollView.Animation.INSERTION);
     }
     private void SetPosts(JSONArray postsArray) {
-        try {
-            for (int i = 0; i < postsArray.length(); i++) {
-                JSONObject post = postsArray.getJSONObject(i).getJSONObject("post");
-                String text = post.getJSONObject("record").getString("text");
-                String heading = post.getJSONObject("author").getString("displayName");
-                String subHeading = post.getJSONObject("author").getString("handle");
-                String likeCount = post.getString("likeCount");
-                String replyCount = post.getString("replyCount");
-                String repostCount = post.getString("repostCount");
-                String timestamp = getTimeAgo(post.getString("indexedAt"));
-                CardBuilder card = new CardBuilder(Timeline.this, CardBuilder.Layout.AUTHOR)
-                        .setText(text)
-                        .setHeading(heading)
-                        .setSubheading(subHeading)
-                        .setFootnote(replyCount + " replies, " + repostCount + " reposts, " + likeCount + " likes")
-                        .setTimestamp(timestamp)
-                        .setIcon(R.drawable.person_64);
-                if (post.getJSONObject("author").has("avatar")) {
-                    String Avatarurl = post.getJSONObject("author").getString("avatar");
-                    makeImageRequest(this, Avatarurl, client, new ImageRequest.ImageCallback() {
-                        @Override
-                        public void onImageLoaded(Bitmap bitmap) {
-                            card.setIcon(bitmap);
-                        }
-                    });
+        executor.execute(() -> {
+            try {
+                for (int i = 0; i < postsArray.length(); i++) {
+                    JSONObject post = postsArray.getJSONObject(i).getJSONObject("post");
+                    String text = post.getJSONObject("record").getString("text");
+                    String heading = post.getJSONObject("author").getString("displayName");
+                    String subHeading = post.getJSONObject("author").getString("handle");
+                    String likeCount = post.getString("likeCount");
+                    String replyCount = post.getString("replyCount");
+                    String repostCount = post.getString("repostCount");
+                    String timestamp = getTimeAgo(post.getString("indexedAt"));
+                    CardBuilder card = new CardBuilder(Timeline.this, CardBuilder.Layout.AUTHOR)
+                            .setText(text)
+                            .setHeading(heading)
+                            .setSubheading(subHeading)
+                            .setFootnote(replyCount + " replies, " + repostCount + " reposts, " + likeCount + " likes")
+                            .setTimestamp(timestamp)
+                            .setIcon(R.drawable.person_64);
+                    if (post.getJSONObject("author").has("avatar")) {
+                        String Avatarurl = post.getJSONObject("author").getString("avatar");
+                        makeImageRequest(this, Avatarurl, client, new ImageRequest.ImageCallback() {
+                            @Override
+                            public void onImageLoaded(Bitmap bitmap) {
+                                card.setIcon(bitmap);
+                            }
+                        });
 
-                }
-                if (post.has("embed") && post.getJSONObject("embed").getString("$type").equals("app.bsky.embed.images#view")) {
-                    if (post.getJSONObject("embed").getJSONArray("images").length() > 1) {
-                        card.setAttributionIcon(R.drawable.collections_64);
-                        if (text.isEmpty()){
-                            card.setText("Posted images");
+                    }
+                    if (post.has("embed") && post.getJSONObject("embed").getString("$type").equals("app.bsky.embed.images#view")) {
+                        if (post.getJSONObject("embed").getJSONArray("images").length() > 1) {
+                            card.setAttributionIcon(R.drawable.collections_64);
+                            if (text.isEmpty()) {
+                                card.setText("Posted images");
+                            }
+                        } else {
+                            card.setAttributionIcon(R.drawable.image_64);
+                            if (text.isEmpty()) {
+                                card.setText("Posted an image");
+                            }
                         }
-                    } else {
-                        card.setAttributionIcon(R.drawable.image_64);
-                        if (text.isEmpty()){
-                            card.setText("Posted an image");
+                    }
+                    if (post.has("embed") && post.getJSONObject("embed").getString("$type").equals("app.bsky.embed.video#view")) {
+                        card.setAttributionIcon(R.drawable.movie_64);
+                        if (text.isEmpty()) {
+                            card.setText("Posted a video");
                         }
                     }
-                }
-                if (post.has("embed") && post.getJSONObject("embed").getString("$type").equals("app.bsky.embed.video#view")) {
-                    card.setAttributionIcon(R.drawable.movie_64);
-                    if (text.isEmpty()){
-                        card.setText("Posted a video");
+                    if (post.has("embed") && post.getJSONObject("embed").getString("$type").equals("app.bsky.embed.external#view")) {
+                        card.setAttributionIcon(R.drawable.public_64);
+                        if (text.isEmpty()) {
+                            card.setText("Posted a link");
+                        }
                     }
+                    mCards.add(card);
                 }
-                if (post.has("embed") && post.getJSONObject("embed").getString("$type").equals("app.bsky.embed.external#view")) {
-                    card.setAttributionIcon(R.drawable.public_64);
-                    if (text.isEmpty()){
-                        card.setText("Posted a link");
-                    }
+                loading = false;
+                if (mIndeterminate != null) {
+                    mIndeterminate.hide();
+                    mIndeterminate = null;
                 }
-                mCards.add(card);
+                runOnUiThread(() -> {
+                    mAdapter.notifyDataSetChanged();
+                });
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
             }
-            mAdapter.notifyDataSetChanged();
-            loading = false;
-            if (mIndeterminate != null) {
-                mIndeterminate.hide();
-                mIndeterminate = null;
-            }
-        } catch (JSONException e) {
-            throw new RuntimeException(e);
-        }
+        });
     }
 
     public static String getTimeAgo(String timestamp) {
@@ -944,12 +953,12 @@ public class Timeline extends Activity {
         mCardScrollView.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (position == mCards.size() - 1 && !loading && !cursor.isEmpty()) {
+                if (position >= mCards.size() - 5 && !loading && !cursor.isEmpty()) {
                     if (mode.equals("algorithm")) {
                         loading = true;
                         mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
                                 .setText("Loading"));
-                        HttpsUtils.makePostRequest("https://bsky.social/xrpc/app.bsky.feed.getFeed?feed=" + uri + "&cursor=" + cursor, null, access_token, "GET",
+                        HttpsUtils.makePostRequest("https://bsky.social/xrpc/app.bsky.feed.getFeed?feed=" + uri + "&cursor=" + cursor + "&limit=" + limit, null, access_token, "GET",
                                 new HttpsUtils.HttpCallback() {
                                     @Override
                                     public void onSuccess(String response) {
@@ -983,7 +992,7 @@ public class Timeline extends Activity {
                     }
                     if (mode.equals("author")) {
                         loading = true;
-                        HttpsUtils.makePostRequest("https://bsky.social/xrpc/app.bsky.feed.getAuthorFeed?actor=" + uri + "&cursor=" + cursor + "&filter=posts_and_author_threads", null, access_token, "GET",
+                        HttpsUtils.makePostRequest("https://bsky.social/xrpc/app.bsky.feed.getAuthorFeed?actor=" + uri + "&cursor=" + cursor + "&filter=posts_and_author_threads&limit=" + limit, null, access_token, "GET",
                                 new HttpsUtils.HttpCallback() {
                                     @Override
                                     public void onSuccess(String response) {
