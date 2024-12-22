@@ -48,7 +48,7 @@ public class VideoActivity extends Activity {
         player.addListener(new Player.Listener() {
             @Override
             public void onPlaybackStateChanged(int state) {
-                if (state == ExoPlayer.STATE_READY) {
+                if (state != ExoPlayer.STATE_BUFFERING) {
                     mIndeterminate.hide();
                     mIndeterminate = null;
                     player.removeListener(this);
