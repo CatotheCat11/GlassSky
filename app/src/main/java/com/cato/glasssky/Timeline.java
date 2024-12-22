@@ -42,8 +42,6 @@ import java.util.regex.Pattern;
 
 import okhttp3.OkHttpClient;
 
-//TODO: Improve performance
-
 public class Timeline extends Activity {
     private List<CardBuilder> mCards;
     private CardScrollView mCardScrollView;
@@ -68,7 +66,8 @@ public class Timeline extends Activity {
     static int REPLY_REQUEST = 0;
     OkHttpClient client;
     static final int limit = 10;
-    private static final ExecutorService executor = Executors.newFixedThreadPool(10);
+    private static final ExecutorService executor = Executors.newFixedThreadPool(2);
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -685,7 +684,6 @@ public class Timeline extends Activity {
                                                 followObj.put("repo", did);
                                                 String authorDid = Author.getString("did");
                                                 record.put("subject", authorDid);
-                                                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
                                                 String timestamp = sdf.format(new Date());
                                                 record.put("createdAt", timestamp);
                                                 followObj.put("record", record);
@@ -785,7 +783,6 @@ public class Timeline extends Activity {
                                                 subject.put("uri", mainPost.getString("uri"));
                                                 subject.put("cid", mainPost.getString("cid"));
                                                 record.put("subject", subject);
-                                                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
                                                 String timestamp = sdf.format(new Date());
                                                 record.put("createdAt", timestamp);
                                                 repostObj.put("record", record);
@@ -872,7 +869,7 @@ public class Timeline extends Activity {
                                                 subject.put("uri", mainPost.getString("uri"));
                                                 subject.put("cid", mainPost.getString("cid"));
                                                 record.put("subject", subject);
-                                                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
+
                                                 String timestamp = sdf.format(new Date());
                                                 record.put("createdAt", timestamp);
                                                 likeObj.put("record", record);
