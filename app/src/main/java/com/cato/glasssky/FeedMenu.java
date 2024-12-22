@@ -24,8 +24,6 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-//TODO: Add feed loading indicator (could be card or slider)
-//TODO: Don't allow click when loading
 
 public class FeedMenu extends Activity {
     int LOGIN_REQUEST = 3;
@@ -236,14 +234,16 @@ public class FeedMenu extends Activity {
                                 }
                     });
                 } else {
-                    Intent timelineIntent = new Intent(FeedMenu.this, Timeline.class);
-                    timelineIntent.putExtra("mode", "algorithm");
-                    try {
-                        timelineIntent.putExtra("uri", pinned.getString(position - 2));
-                    } catch (JSONException e) {
-                        throw new RuntimeException(e);
+                    if (pinned != null) {
+                        Intent timelineIntent = new Intent(FeedMenu.this, Timeline.class);
+                        timelineIntent.putExtra("mode", "algorithm");
+                        try {
+                            timelineIntent.putExtra("uri", pinned.getString(position - 2));
+                        } catch (JSONException e) {
+                            throw new RuntimeException(e);
+                        }
+                        startActivity(timelineIntent);
                     }
-                    startActivity(timelineIntent);
                 }
             }
         });
