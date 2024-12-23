@@ -13,7 +13,7 @@ An app for using Bluesky on the Google Glass.
 4. Generate a QR code with your handle
 5. Open the app and scan the QR code
    
-  ![bsky](https://github.com/user-attachments/assets/1e99f50b-c4ec-4893-a7b1-f6bb2a7e3714)
+  <img width="640" alt="Frame 2" src="https://github.com/user-attachments/assets/d93eca4c-6ca0-4b96-b28c-d61bed8b6e3e" />
 
 6. Generate another QR code with your app password, and scan it
 
