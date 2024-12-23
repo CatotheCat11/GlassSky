@@ -1,9 +1,5 @@
 # GlassSky
 An app for using Bluesky on the Google Glass.
-<details>
-<summary>
-How to setup
-</summary>
   
 ## How to setup
 1. Install the app using [`adb`](https://developer.android.com/tools/help/adb.html)
@@ -20,25 +16,25 @@ How to setup
   ![bsky](https://github.com/user-attachments/assets/1e99f50b-c4ec-4893-a7b1-f6bb2a7e3714)
 
 6. Generate another QR code with your app password, and scan it
-</details>
-<details>
-  <summary>
-    How to use
-  </summary>
-  
-  ## How to use
-  From the main page, there are three things you can do:
-  1. Make a new post
-  2. View your profile page
-  3. Open a feed
+
+## How to use
+From the main page, there are three things you can do:
+1. Make a new post
+2. View your profile page
+3. Open a feed
 
 ### Making a new post
 To make a new post, select the New Post card on the main menu.
 You can add three things to your post: text, a photo, and a video.
+
+<img width="2620" alt="Post options" src="https://github.com/user-attachments/assets/7860e97e-0c50-4341-ac8f-6b9497e849f6" />
+
 To add text, select the first card in the menu. This will let you speak, and will add the transcribed text to your post.
 You can add either a photo or a video to your post (but not both). To do so, either use the camera button (short press for photo, long press for video) or select the card in the menu.
 Finally, to post, select the rightmost card.
 ### Viewing a feed
-TODO
+When you open a feed, you'll see a list of posts. You can swipe through the posts, and tap to view one.
 
-</details>
+![Bluesky](https://github.com/user-attachments/assets/43c93de3-faf8-4114-9660-a3ccd7b4ebcd)
+
+When viewing a post, you can swipe to the left for various options, such as liking the post, replying, or viewing the post author's page. If you swipe right, you can see the replies to the post.
