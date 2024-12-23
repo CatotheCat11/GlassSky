@@ -24,6 +24,7 @@ import okhttp3.internal.tls.OkHostnameVerifier;
 
 public class HttpsUtils {
     private static final String TAG = "HttpsUtils";
+    static OkHttpClient client = null;
 
     // Interface to handle the response
     public interface HttpCallback {
@@ -37,6 +38,7 @@ public class HttpsUtils {
             @Override
             protected String doInBackground(Void... voids) {
                 try {
+                    /*
                     // Create a custom SSL context that enables multiple TLS protocols
                     TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(
                             TrustManagerFactory.getDefaultAlgorithm());
@@ -54,7 +56,9 @@ public class HttpsUtils {
                             .followSslRedirects(true)
                             .retryOnConnectionFailure(true);
 
-                    OkHttpClient client = builder.build();
+                    OkHttpClient client = builder.build(); */ //TODO: Test static client!
+                    getClient();
+
 
                     Request request = null;
                     if (auth == null) {
@@ -140,5 +144,30 @@ public class HttpsUtils {
                 }
             }
         }.execute();
+    }
+    private static void getClient() {
+        if (client == null) {
+            try {
+                // Create a custom SSL context that enables multiple TLS protocols
+                TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(
+                        TrustManagerFactory.getDefaultAlgorithm());
+                trustManagerFactory.init((KeyStore) null);
+                TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
+
+                // Try to enable TLS protocols manually
+                SSLContext sslContext = SSLContext.getInstance("TLS", "Conscrypt");
+                sslContext.init(null, trustManagers, new SecureRandom());
+
+                OkHttpClient.Builder builder = new OkHttpClient.Builder()
+                        .sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) trustManagers[0])
+                        .hostnameVerifier(OkHostnameVerifier.INSTANCE)
+                        .followRedirects(true)
+                        .followSslRedirects(true)
+                        .retryOnConnectionFailure(true);
+                client = builder.build();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

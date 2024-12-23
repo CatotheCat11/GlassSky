@@ -34,7 +34,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -68,7 +67,6 @@ public class Timeline extends Activity {
     static int REPLY_REQUEST = 0;
     OkHttpClient client;
     static final int limit = 10;
-    private static final ExecutorService executor = Executors.newFixedThreadPool(2);
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
 
     @Override
@@ -552,7 +550,7 @@ public class Timeline extends Activity {
         mCardScrollView.animate(position, CardScrollView.Animation.INSERTION);
     }
     private void SetPosts(JSONArray postsArray) {
-        executor.execute(() -> {
+        Executors.newSingleThreadExecutor().execute(() -> {
             try {
                 for (int i = 0; i < postsArray.length(); i++) {
                     JSONObject post = postsArray.getJSONObject(i).getJSONObject("post");
