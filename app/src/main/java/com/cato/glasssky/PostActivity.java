@@ -126,7 +126,7 @@ public class PostActivity extends Activity {
         mCards.add(new CardBuilder(this, CardBuilder.Layout.MENU)
                 .setText("Add a video")
                 .setFootnote("Takes a video with the camera")
-                .setIcon(R.drawable.add_a_photo_64));
+                .setIcon(R.drawable.videocam_64));
         mCards.add(new CardBuilder(this, CardBuilder.Layout.MENU)
                 .setText("Post")
                 .setIcon(R.drawable.post_add_64));

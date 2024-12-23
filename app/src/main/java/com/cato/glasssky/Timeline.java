@@ -349,29 +349,39 @@ public class Timeline extends Activity {
                                                             String postsCount = Author.getString("postsCount");
                                                             if (Author.getJSONObject("viewer").has("blocking")) {
                                                                 mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
-                                                                        .setText("Unblock"));
+                                                                        .setText("Unblock")
+                                                                        .setIcon(R.drawable.block_64));
                                                                 blocked = true;
                                                             } else {
                                                                 mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
-                                                                        .setText("Block"));
+                                                                        .setText("Block")
+                                                                        .setIcon(R.drawable.block_64));
                                                                 blocked = false;
                                                             }
                                                             if (Author.getJSONObject("viewer").getBoolean("muted")) {
                                                                 mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
-                                                                        .setText("Unmute"));
+                                                                        .setText("Unmute")
+                                                                        .setIcon(R.drawable.voice_over_off_64));
                                                                 muted = true;
                                                             } else {
                                                                 mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
-                                                                        .setText("Mute"));
+                                                                        .setText("Mute")
+                                                                        .setIcon(R.drawable.voice_over_off_64));
                                                                 muted = false;
                                                             }
                                                             if (Author.getJSONObject("viewer").has("following")) {
                                                                 mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
-                                                                        .setText("Unfollow"));
+                                                                        .setText("Unfollow")
+                                                                        .setIcon(R.drawable.person_add_64));
                                                                 following = true;
                                                             } else {
-                                                                mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
-                                                                        .setText("Follow"));
+                                                                CardBuilder followCard = new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
+                                                                        .setText("Follow")
+                                                                        .setIcon(R.drawable.person_add_64);
+                                                                if (blocked = true) {
+                                                                    followCard.setFootnote("You must unblock this user to follow them.");
+                                                                }
+                                                                mCards.add(followCard);
                                                                 following = false;
                                                             }
                                                             authorCard
@@ -381,8 +391,10 @@ public class Timeline extends Activity {
                                                                     .setSubheading(handle)
                                                                     .setFootnote(round(followersCount) + " followers, " + round(followsCount) + " following, " + round(postsCount) + " posts");
                                                             mCards.add(authorCard);
-                                                            mAdapter.notifyDataSetChanged();
-                                                            mCardScrollView.setSelection(extraCards - 1);
+                                                            runOnUiThread(() -> {
+                                                                mAdapter.notifyDataSetChanged();
+                                                                mCardScrollView.setSelection(extraCards - 1);
+                                                            });
                                                             HttpsUtils.makePostRequest("https://bsky.social/xrpc/app.bsky.feed.getAuthorFeed?actor=" + uri + "&filter=posts_and_author_threads&limit=" + limit, null, access_token, "GET",
                                                                     new HttpsUtils.HttpCallback() {
 
@@ -425,29 +437,35 @@ public class Timeline extends Activity {
                                                     String postsCount = Author.getString("postsCount");
                                                     if (Author.getJSONObject("viewer").has("blocking")) {
                                                         mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
-                                                                .setText("Unblock"));
+                                                                .setText("Unblock")
+                                                                .setIcon(R.drawable.block_64));
                                                         blocked = true;
                                                     } else {
                                                         mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
-                                                                .setText("Block"));
+                                                                .setText("Block")
+                                                                .setIcon(R.drawable.block_64));
                                                         blocked = false;
                                                     }
-                                                    if (Author.getJSONObject("viewer").has("muted")) {
+                                                    if (Author.getJSONObject("viewer").getBoolean("muted")) {
                                                         mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
-                                                                .setText("Unmute"));
+                                                                .setText("Unmute")
+                                                                .setIcon(R.drawable.voice_over_off_64));
                                                         muted = true;
                                                     } else {
                                                         mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
-                                                                .setText("Mute"));
+                                                                .setText("Mute")
+                                                                .setIcon(R.drawable.voice_over_off_64));
                                                         muted = false;
                                                     }
                                                     if (Author.getJSONObject("viewer").has("following")) {
                                                         mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
-                                                                .setText("Unfollow"));
+                                                                .setText("Unfollow")
+                                                                .setIcon(R.drawable.person_add_64));
                                                         following = true;
                                                     } else {
                                                         CardBuilder followCard = new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
-                                                                .setText("Follow");
+                                                                .setText("Follow")
+                                                                .setIcon(R.drawable.person_add_64);
                                                         if (blocked = true) {
                                                             followCard.setFootnote("You must unblock this user to follow them.");
                                                         }
