@@ -117,15 +117,15 @@ public class PostActivity extends Activity {
     private void createCards() {
         mCards.add(new CardBuilder(this, CardBuilder.Layout.MENU)
                 .setText("Add text")
-                .setFootnote("Uses voice input") //TODO: better footnote?
+                .setFootnote("Inputs text through voice")
                 .setIcon(R.drawable.subject_64));
         mCards.add(new CardBuilder(this, CardBuilder.Layout.MENU)
                 .setText("Add a photo")
-                .setFootnote("Uses camera to take a photo") //TODO: better footnote?
+                .setFootnote("Takes a photo with the camera")
                 .setIcon(R.drawable.add_a_photo_64));
         mCards.add(new CardBuilder(this, CardBuilder.Layout.MENU)
                 .setText("Add a video")
-                .setFootnote("Uses camera to take a video") //TODO: better footnote?
+                .setFootnote("Takes a video with the camera")
                 .setIcon(R.drawable.add_a_photo_64));
         mCards.add(new CardBuilder(this, CardBuilder.Layout.MENU)
                 .setText("Post")
@@ -165,7 +165,7 @@ public class PostActivity extends Activity {
         }
     }
     private void setupClickListener() {
-        mCardScrollView.setOnItemClickListener(new AdapterView.OnItemClickListener() { //TODO: Add camera button shortcuts
+        mCardScrollView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -185,7 +185,9 @@ public class PostActivity extends Activity {
                         }
                 }
                 if (position == 3) {
-                    post(text, image, videoPath);
+                    if (!thumbnailPath.isEmpty() || !videoPath.isEmpty() || !text.isEmpty()) {
+                        post(text, image, videoPath);
+                    }
                 }
             }
         });
@@ -430,8 +432,8 @@ public class PostActivity extends Activity {
             Bitmap thumbnail = BitmapFactory.decodeFile(thumbnailPath);
             mCards.set(1, new CardBuilder(this, CardBuilder.Layout.CAPTION)
                     .addImage(thumbnail)
-                    .setFootnote("Tap to take a new picture")); //TODO: Add multiple images support
-            mCards.get(2).setFootnote("Cannot have an image and video at the same time"); //TODO: check if image and video at same time is actually possible?
+                    .setFootnote("Tap to take a new picture"));
+            mCards.get(2).setFootnote("Cannot have an image and video at the same time");
             mCards.get(3).setFootnote("Picture is processing...");
             mCardScrollView.setSelection(1);
             mAdapter.notifyDataSetChanged();
@@ -565,7 +567,6 @@ public class PostActivity extends Activity {
                                         // Log progress
                                         int progress = (int) ((uploaded * 100) / fileLength);
                                         Log.d(TAG, "Upload progress: " + progress + "%");
-                                        // TODO: Implement slider progress bar
                                     }
                                 }
                             }
