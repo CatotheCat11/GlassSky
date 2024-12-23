@@ -19,8 +19,6 @@ import java.util.EnumSet;
 import java.util.Map;
 
 import android.app.AlertDialog;
-import android.app.PendingIntent;
-import android.app.PendingIntent.CanceledException;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -247,7 +245,7 @@ public final class CaptureActivity extends BaseGlassActivity implements
 
         boolean fromLiveScan = barcode != null;
         if (fromLiveScan) {
-            mBeepManager.playBeepSoundAndVibrate();
+            mBeepManager.playBeepSound();
             drawResultPoints(barcode, scaleFactor, rawResult, getResources()
                     .getColor(R.color.result_points));
         }
