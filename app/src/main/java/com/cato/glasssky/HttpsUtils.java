@@ -38,25 +38,6 @@ public class HttpsUtils {
             @Override
             protected String doInBackground(Void... voids) {
                 try {
-                    /*
-                    // Create a custom SSL context that enables multiple TLS protocols
-                    TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(
-                            TrustManagerFactory.getDefaultAlgorithm());
-                    trustManagerFactory.init((KeyStore) null);
-                    TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
-
-                    // Try to enable TLS protocols manually
-                    SSLContext sslContext = SSLContext.getInstance("TLS", "Conscrypt");
-                    sslContext.init(null, trustManagers, new SecureRandom());
-
-                    OkHttpClient.Builder builder = new OkHttpClient.Builder()
-                            .sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) trustManagers[0])
-                            .hostnameVerifier(OkHostnameVerifier.INSTANCE)
-                            .followRedirects(true)
-                            .followSslRedirects(true)
-                            .retryOnConnectionFailure(true);
-
-                    OkHttpClient client = builder.build(); */ //TODO: Test static client!
                     getClient();
 
 

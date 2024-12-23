@@ -2,6 +2,7 @@ package com.github.barcodeeye.scan.result;
 
 import java.util.List;
 
+import android.annotation.SuppressLint;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
@@ -46,8 +47,9 @@ public abstract class ResultProcessor<T extends ParsedResult> {
 
     public abstract List<CardPresenter> getCardResults();
 
+    @SuppressLint("UnspecifiedImmutableFlag")
     public static PendingIntent createPendingIntent(Context context,
-            Intent intent) {
+                                                    Intent intent) {
         return PendingIntent.getActivity(context, 0, intent, 0);
     }
 }
