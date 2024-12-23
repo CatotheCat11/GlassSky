@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<trigger command="SHOW_ME_THE_NEWS" >
+<trigger keyword="@string/app_name" >
     <constraints
         network="true" />
 </trigger>
