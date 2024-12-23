@@ -22,7 +22,6 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 
-import com.cato.glasssky.R;
 import com.google.android.glass.content.Intents;
 import com.google.android.glass.media.Sounds;
 import com.google.android.glass.widget.CardBuilder;
@@ -290,7 +289,7 @@ public class PostActivity extends Activity {
 
                                 @Override
                                 public void onError(String errorMessage) {
-                                    Log.i("Error", "Error");
+                                    Log.e("Error", errorMessage);
                                 }
                             });
                         } else if (!video.isEmpty()) {
@@ -341,7 +340,7 @@ public class PostActivity extends Activity {
                                                         setResult(RESULT_OK, intent);
                                                         AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                                                         am.playSoundEffect(Sounds.SUCCESS);
-                                                        Log.d("Success", "Successfully posted!");
+                                                        Log.i("Success", "Successfully posted!");
                                                         mIndeterminate.hide();
                                                         finish();
                                                     }
@@ -358,7 +357,7 @@ public class PostActivity extends Activity {
 
                                 @Override
                                 public void onError(String errorMessage) {
-                                    Log.i("Error", "Error");
+                                    Log.e("Error", errorMessage);
                                 }
                             });
                         } else {
@@ -400,7 +399,7 @@ public class PostActivity extends Activity {
                                                 setResult(RESULT_OK, intent);
                                                 AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                                                 am.playSoundEffect(Sounds.SUCCESS);
-                                                Log.d("Success", "Successfully posted!");
+                                                Log.i("Success", "Successfully posted!");
                                                 mIndeterminate.hide();
                                                 finish();
                                             }
@@ -474,9 +473,9 @@ public class PostActivity extends Activity {
                 Log.e(TAG, "Failed to decode bitmap. File may still be incomplete.");
                 return;
             }
-            Log.i(TAG, "Picture ready");
+            Log.d(TAG, "Picture ready");
         } else {
-            Log.i(TAG, "Picture not ready...");
+            Log.d(TAG, "Picture not ready...");
             final File parentDirectory = pictureFile.getParentFile();
             observer = new FileObserver(parentDirectory.getPath(), FileObserver.CLOSE_WRITE | FileObserver.MOVED_TO) {
                 private boolean isFileWritten;
