@@ -190,7 +190,7 @@ public class Timeline extends Activity {
                                 if (!text.isEmpty()) {
                                     cardHolder[0] = new CardBuilder(Timeline.this, CardBuilder.Layout.TEXT)
                                             .setText(text)
-                                            .setFootnote(replyCount + " replies, " + repostCount + " reposts, " + likeCount + " likes")
+                                            .setFootnote(round(replyCount) + " \uD83D\uDCAC   " + round(repostCount) + " \uD83D\uDD01   " + round(likeCount) + " \uD83D\uDC95")
                                             .setTimestamp(timestamp);
                                     mCards.add(cardHolder[0]);
                                 }
@@ -206,7 +206,7 @@ public class Timeline extends Activity {
                                             public void onImageLoaded(Bitmap bitmap) {
                                                 card[0] = new CardBuilder(Timeline.this, CardBuilder.Layout.CAPTION)
                                                         .setText(caption)
-                                                        .setFootnote(replyCount + " replies, " + repostCount + " reposts, " + likeCount + " likes")
+                                                        .setFootnote(round(replyCount) + " replies, " + round(repostCount) + " reposts, " + round(likeCount) + " likes")
                                                         .setTimestamp(timestamp)
                                                         .addImage(bitmap);
                                                 mCards.add(card[0]);
@@ -379,7 +379,7 @@ public class Timeline extends Activity {
                                                                     .setText(description)
                                                                     .setHeading(displayName)
                                                                     .setSubheading(handle)
-                                                                    .setFootnote(followersCount + " followers, " + followsCount + " following, " + postsCount + " posts");
+                                                                    .setFootnote(round(followersCount) + " followers, " + round(followsCount) + " following, " + round(postsCount) + " posts");
                                                             mCards.add(authorCard);
                                                             mAdapter.notifyDataSetChanged();
                                                             mCardScrollView.setSelection(extraCards - 1);
@@ -458,7 +458,7 @@ public class Timeline extends Activity {
                                                             .setText(description)
                                                             .setHeading(displayName)
                                                             .setSubheading(handle)
-                                                            .setFootnote(followersCount + " followers, " + followsCount + " following, " + postsCount + " posts");
+                                                            .setFootnote(round(followersCount) + " followers, " + round(followsCount) + " following, " + round(postsCount) + " posts");
                                                     mCards.add(authorCard);
                                                     mAdapter.notifyDataSetChanged();
                                                     mCardScrollView.setSelection(extraCards - 1);
@@ -568,7 +568,7 @@ public class Timeline extends Activity {
                             .setText(text)
                             .setHeading(heading)
                             .setSubheading(subHeading)
-                            .setFootnote(replyCount + " replies, " + repostCount + " reposts, " + likeCount + " likes")
+                            .setFootnote(round(replyCount) + " \uD83D\uDCAC   " + round(repostCount) + " \uD83D\uDD01   " + round(likeCount) + " \uD83D\uDC95")
                             .setTimestamp(timestamp)
                             .setIcon(R.drawable.person_64);
                     if (post.getJSONObject("author").has("avatar")) {
@@ -661,6 +661,16 @@ public class Timeline extends Activity {
         } catch (ParseException e) {
             e.printStackTrace();
             return "Invalid date";
+        }
+    }
+    public static String round(String value) {
+        int val = Integer.parseInt(value);
+        if (val >= 1000000) {
+            return String.format("%.1fM", val / 1000000.0);
+        } else if (val >= 1000) {
+            return String.format("%.1fM", val / 1000.0);
+        } else {
+            return value;
         }
     }
     private void setupClickListener() {
@@ -1233,7 +1243,7 @@ public class Timeline extends Activity {
                                         .setText(text)
                                         .setHeading(heading)
                                         .setSubheading(subHeading)
-                                        .setFootnote(replyCount + " replies, " + repostCount + " reposts, " + likeCount + " likes")
+                                        .setFootnote(round(replyCount) + " \uD83D\uDCAC   " + round(repostCount) + " \uD83D\uDD01   " + round(likeCount) + " \uD83D\uDC95")
                                         .setTimestamp(timestamp);
                                 if (post.has("embed") && post.getJSONObject("embed").getString("$type").equals("app.bsky.embed.images#view")) {
                                     if (post.getJSONObject("embed").getJSONArray("images").length() > 1) {
