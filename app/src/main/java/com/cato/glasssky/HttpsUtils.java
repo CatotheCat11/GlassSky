@@ -99,8 +99,7 @@ public class HttpsUtils {
                         return "Error in response: " + response.code();
                     }
 
-                    String responseBody = response.body().string();
-                    return responseBody;
+                    return response.body().string();
 
                 } catch (Exception e) {
                     Log.e(TAG, "Complete Error Details:", e);

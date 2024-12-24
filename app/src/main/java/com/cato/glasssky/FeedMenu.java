@@ -122,7 +122,6 @@ public class FeedMenu extends Activity {
                                     });
                             for (int i = 0; i < pinned.length(); i++) {
                                 String feed = pinned.getString(i);
-                                int finalI = i;
                             }
                         } catch (JSONException e) {
                             throw new RuntimeException(e);
