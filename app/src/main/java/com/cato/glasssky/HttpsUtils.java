@@ -39,17 +39,15 @@ public class HttpsUtils {
             protected String doInBackground(Void... voids) {
                 try {
                     getClient();
-
-
                     Request request = null;
                     if (auth == null) {
-                        if (method == "GET") {
+                        if (method.equals("GET")) {
                             request = new Request.Builder()
                                     .url(url)
                                     .addHeader("Content-Type", "application/json")
                                     .addHeader("Accept", "application/json")
                                     .build();
-                        } else if (method == "POST") {
+                        } else if (method.equals("POST")) {
                             RequestBody requestBody = RequestBody.create(
                                     MediaType.parse("application/json; charset=utf-8"),
                                     jsonBody.toString()
@@ -63,14 +61,14 @@ public class HttpsUtils {
                                     .build();
                         }
                     } else {
-                        if (method == "GET") {
+                        if (method.equals("GET")) {
                             request = new Request.Builder()
                                     .url(url)
                                     .addHeader("Content-Type", "application/json")
                                     .addHeader("Accept", "application/json")
                                     .addHeader("Authorization", "Bearer " + auth)
                                     .build();
-                        } else if (method == "POST") {
+                        } else if (method.equals("POST")) {
                             RequestBody requestBody;
                             if (jsonBody == null) {
                                 requestBody = RequestBody.create(null, new byte[0]);

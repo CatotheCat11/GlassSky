@@ -62,7 +62,7 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
         handle = sharedPref.getString(getString(R.string.handle), "unset");
         refresh_token = sharedPref.getString(getString(R.string.refresh_token), "unset");
         app_password = sharedPref.getString(getString(R.string.handle), "unset");
-        if(handle == "unset" | app_password == "unset" | refresh_token == "unset") {
+        if(handle.equals("unset") | app_password.equals("unset") | refresh_token.equals("unset")) {
             Intent objIntent = CaptureActivity.newIntent(this, true);
             objIntent.putExtra("SCAN_MODE", "QR_CODE_MODE");
             startActivityForResult(objIntent, BARCODE_HANDLE_REQUEST);
