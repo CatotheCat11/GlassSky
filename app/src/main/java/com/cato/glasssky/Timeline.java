@@ -284,8 +284,10 @@ public class Timeline extends Activity {
                                             } else {
                                                 extraCards = 5;
                                             }
-                                            mCardScrollView.setSelection(extraCards - 2);
-                                            mAdapter.notifyDataSetChanged();
+                                            runOnUiThread(() -> {
+                                                mCardScrollView.setSelection(extraCards - 2);
+                                                mAdapter.notifyDataSetChanged();
+                                            });
                                             SetPosts(responseArray);
                                         }
                                     });
