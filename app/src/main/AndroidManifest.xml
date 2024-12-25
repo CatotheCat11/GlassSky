@@ -48,6 +48,10 @@
             android:theme="@style/AppTheme"
             android:exported="true"/>
         <activity
+            android:name=".MediaSelect"
+            android:theme="@style/AppTheme"
+            android:exported="true"/>
+        <activity
             android:name="com.github.barcodeeye.scan.CaptureActivity"
             android:clearTaskOnLaunch="true"
             android:configChanges="orientation|keyboardHidden"

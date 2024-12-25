@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -22,6 +23,13 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DecodeFormat;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.google.android.glass.content.Intents;
 import com.google.android.glass.media.Sounds;
 import com.google.android.glass.widget.CardBuilder;
@@ -45,8 +53,13 @@ import java.security.Security;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.net.ssl.SSLContext;
@@ -66,6 +79,7 @@ public class PostActivity extends Activity {
     private static final int SPEECH_REQUEST = 0;
     private static final int TAKE_PICTURE_REQUEST = 1;
     private static final int TAKE_VIDEO_REQUEST = 2;
+    private static final int MEDIA_REQUEST = 3;
 
     private List<CardBuilder> mCards;
     private static CardScrollView mCardScrollView;
@@ -76,21 +90,23 @@ public class PostActivity extends Activity {
     Bitmap bitmap;
     String text = "";
     String thumbnailPath = "";
-    static String videoPath = "";
-    Bitmap image = null;
+    static String videoPath = ""; //TODO: TEST VIDEO FILE ADDING (AND IMAGE TOO) CHECK CARD POSITION AND REMOVE COMMENT BLOCK
+    ArrayList<Bitmap> image = new ArrayList<>();
+    ArrayList<String> processArray = new ArrayList<>();
+    Boolean processing = false;
     String parenturi = "";
     String parentcid = "";
     String rooturi = "";
     String rootcid = "";
     static String did;
-    private static FileInputStream fileInputStream;
-    private static BufferedInputStream bufferedInputStream;
-    private static final AtomicReference<Exception> uploadError = new AtomicReference<>();
+    static ExecutorService executor = Executors.newFixedThreadPool(1);
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        videoPath = "";
 
         mCards = new ArrayList<CardBuilder>();
 
@@ -119,13 +135,8 @@ public class PostActivity extends Activity {
                 .setFootnote("Inputs text through voice")
                 .setIcon(R.drawable.subject_64));
         mCards.add(new CardBuilder(this, CardBuilder.Layout.MENU)
-                .setText("Add a photo")
-                .setFootnote("Takes a photo with the camera")
+                .setText("Add media")
                 .setIcon(R.drawable.add_a_photo_64));
-        mCards.add(new CardBuilder(this, CardBuilder.Layout.MENU)
-                .setText("Add a video")
-                .setFootnote("Takes a video with the camera")
-                .setIcon(R.drawable.videocam_64));
         mCards.add(new CardBuilder(this, CardBuilder.Layout.MENU)
                 .setText("Post")
                 .setIcon(R.drawable.post_add_64));
@@ -162,6 +173,18 @@ public class PostActivity extends Activity {
         public View getView(int position, View convertView, ViewGroup parent) {
             return mCards.get(position).getView(convertView, parent);
         }
+        // Inserts a card into the adapter, without notifying.
+        public void insertCardWithoutNotification(int position, CardBuilder card) {
+            mCards.add(position, card);
+        }
+    }
+    private void insertNewCard(int position, CardBuilder card) {
+        // Insert new card in the adapter, but don't call
+        // notifyDataSetChanged() yet. Instead, request proper animation
+        // to inserted card from card scroller, which will notify the
+        // adapter at the right time during the animation.
+        mAdapter.insertCardWithoutNotification(position, card);
+        mCardScrollView.animate(position, CardScrollView.Animation.INSERTION);
     }
     private void setupClickListener() {
         mCardScrollView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -169,22 +192,22 @@ public class PostActivity extends Activity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                if (position == mCards.size() - 1 && processing) {
+                    // Block posting while processing images
+                    am.playSoundEffect(Sounds.DISALLOWED);
+                    return;
+                }
                 am.playSoundEffect(Sounds.TAP);
-                if (position == 0) {
+                if (position == 0 && mCards.size() > 1) {
                     displaySpeechRecognizer();
                 }
-                if (position == 1) {
-                    if (videoPath.isEmpty()) {
-                        takePicture();
-                    }
+                if (position == mCards.size() - 2 && videoPath.isEmpty()) {
+                    Intent mediaSelect = new Intent(PostActivity.this, MediaSelect.class);
+                    mediaSelect.putExtra("video", image.isEmpty());
+                    startActivityForResult(mediaSelect, MEDIA_REQUEST);
                 }
-                if (position == 2) {
-                    if (thumbnailPath.isEmpty()) {
-                        takeVideo();
-                        }
-                }
-                if (position == 3) {
-                    if (!thumbnailPath.isEmpty() || !videoPath.isEmpty() || !text.isEmpty()) {
+                if (position == mCards.size() - 1) {
+                    if ((!thumbnailPath.isEmpty() || !videoPath.isEmpty() || !text.isEmpty() || !image.isEmpty())) {
                         post(text, image, videoPath);
                     }
                 }
@@ -203,11 +226,15 @@ public class PostActivity extends Activity {
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         startActivityForResult(intent, SPEECH_REQUEST);
     }
-    private void post(String text, Bitmap image, String video) {
+    private void post(String text, ArrayList<Bitmap> image, String video) {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        mIndeterminate = mSlider.startIndeterminate();
         Log.i(TAG, "Posting...");
-        mCards.get(3).setText("Posting");
+        mCards.clear();
+        mCards.add(new CardBuilder(this, CardBuilder.Layout.MENU)
+                .setText("Posting...")
+                .setIcon(R.drawable.post_add_64));
+        mAdapter.notifyDataSetChanged();
+        mIndeterminate = mSlider.startIndeterminate();
         SharedPreferences sharedPref = PostActivity.this.getSharedPreferences(
                 getString(R.string.auth), Context.MODE_PRIVATE);
         String access_token = sharedPref.getString(getString(R.string.access_token), "unset");
@@ -221,77 +248,84 @@ public class PostActivity extends Activity {
                             throw new RuntimeException(e);
                         }
                         if (image != null) {
-                            makeImageRequest(image, access_token, false, new HttpCallback() {
-                                @Override
-                                public void onSuccess(String response) {
-                                    Log.i("Success", "Success");
-                                    try {
-                                        JSONObject blob = new JSONObject(response).getJSONObject("blob");
-                                        JSONObject imageObj = new JSONObject();
-                                        imageObj.put("alt", "");
-                                        imageObj.put("image", blob);
-                                        JSONArray images = new JSONArray().put(imageObj);
-                                        JSONObject embed = new JSONObject();
-                                        embed.put("$type", "app.bsky.embed.images");
-                                        embed.put("images", images);
-                                        JSONObject record = new JSONObject();
-                                        record.put("$type", "app.bsky.feed.post");
-                                        if (!text.isEmpty()) {
-                                            record.put("text", text);
-                                        }
-                                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
-                                        String timestamp = sdf.format(new Date());
-                                        record.put("createdAt", timestamp);
-                                        if (!parentcid.isEmpty()) {
-                                            JSONObject root = new JSONObject();
-                                            JSONObject parent = new JSONObject();
-                                            JSONObject reply = new JSONObject();
-                                            root.put("uri", rooturi);
-                                            root.put("cid", rootcid);
-                                            parent.put("uri", rooturi);
-                                            parent.put("cid", parentcid);
-                                            reply.put("root", root);
-                                            reply.put("parent", parent);
-                                            record.put("reply", reply);
-                                        }
-                                        record.put("embed", embed);
-                                        JSONObject imagePost = new JSONObject();
-                                        imagePost.put("collection", "app.bsky.feed.post");
-                                        imagePost.put("repo", new JSONObject(didresponse).getString("did"));
-                                        imagePost.put("record", record);
-                                        HttpsUtils.makePostRequest("https://bsky.social/xrpc/com.atproto.repo.createRecord", imagePost, access_token, "POST",
-                                                new HttpsUtils.HttpCallback() {
-                                                    @Override
-                                                    public void onSuccess(String response) {
-                                                        Intent intent = getIntent();
-                                                        try {
-                                                            intent.putExtra("uri", new JSONObject(response).getString("uri"));
-                                                        } catch (JSONException e) {
-                                                            throw new RuntimeException(e);
-                                                        }
-                                                        setResult(RESULT_OK, intent);
-                                                        AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                                                        am.playSoundEffect(Sounds.SUCCESS);
-                                                        Log.d("Success", "Successfully posted!");
-                                                        mIndeterminate.hide();
-                                                        finish();
-                                                    }
+                            JSONArray images = new JSONArray();
+                            for(int i = 0; i < image.size(); i++) {
+                                int finalI = i;
+                                makeImageRequest(image.get(i), access_token, false, new HttpCallback() {
+                                    @Override
+                                    public void onSuccess(String response) {
+                                        try {
+                                            JSONObject blob = new JSONObject(response).getJSONObject("blob");
+                                            JSONObject imageObj = new JSONObject();
+                                            imageObj.put("alt", "");
+                                            imageObj.put("image", blob);
+                                            images.put(imageObj);
+                                            if (finalI == image.size() - 1) {
+                                                JSONObject embed = new JSONObject();
+                                                embed.put("$type", "app.bsky.embed.images");
+                                                embed.put("images", images);
+                                                JSONObject record = new JSONObject();
+                                                record.put("$type", "app.bsky.feed.post");
+                                                if (!text.isEmpty()) {
+                                                    record.put("text", text);
+                                                }
+                                                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
+                                                String timestamp = sdf.format(new Date());
+                                                record.put("createdAt", timestamp);
+                                                if (!parentcid.isEmpty()) {
+                                                    JSONObject root = new JSONObject();
+                                                    JSONObject parent = new JSONObject();
+                                                    JSONObject reply = new JSONObject();
+                                                    root.put("uri", rooturi);
+                                                    root.put("cid", rootcid);
+                                                    parent.put("uri", rooturi);
+                                                    parent.put("cid", parentcid);
+                                                    reply.put("root", root);
+                                                    reply.put("parent", parent);
+                                                    record.put("reply", reply);
+                                                }
+                                                record.put("embed", embed);
+                                                JSONObject imagePost = new JSONObject();
+                                                imagePost.put("collection", "app.bsky.feed.post");
+                                                imagePost.put("repo", new JSONObject(didresponse).getString("did"));
+                                                imagePost.put("record", record);
+                                                HttpsUtils.makePostRequest("https://bsky.social/xrpc/com.atproto.repo.createRecord", imagePost, access_token, "POST",
+                                                        new HttpsUtils.HttpCallback() {
+                                                            @Override
+                                                            public void onSuccess(String response) {
+                                                                Intent intent = getIntent();
+                                                                try {
+                                                                    intent.putExtra("uri", new JSONObject(response).getString("uri"));
+                                                                } catch (JSONException e) {
+                                                                    throw new RuntimeException(e);
+                                                                }
+                                                                setResult(RESULT_OK, intent);
+                                                                AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                                                                am.playSoundEffect(Sounds.SUCCESS);
+                                                                Log.d("Success", "Successfully posted!");
+                                                                mIndeterminate.hide();
+                                                                finish();
+                                                            }
 
-                                                    @Override
-                                                    public void onError(String errorMessage) {
+                                                            @Override
+                                                            public void onError(String errorMessage) {
 
-                                                    }
-                                                });
-                                    } catch (JSONException e) {
-                                        throw new RuntimeException(e);
+                                                            }
+                                                        });
+                                            }
+                                        } catch (Exception e) {
+                                            throw new RuntimeException(e);
+                                        }
+                                        Log.i("Success", "Success");
                                     }
-                                }
 
-                                @Override
-                                public void onError(String errorMessage) {
-                                    Log.e("Error", errorMessage);
-                                }
-                            });
+                                    @Override
+                                    public void onError(String errorMessage) {
+                                        Log.e("Error", errorMessage);
+                                        finish(); //Exiting to prevent self destruction of the bluesky platform bcz of too many broken requests
+                                    }
+                                });
+                            }
                         } else if (!video.isEmpty()) {
                             makeImageRequest(null, access_token, true, new HttpCallback() {
                                 @Override
@@ -423,17 +457,18 @@ public class PostActivity extends Activity {
     }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == TAKE_PICTURE_REQUEST && resultCode == RESULT_OK) {
+        if (requestCode == TAKE_PICTURE_REQUEST && resultCode == RESULT_OK) { //TODO: Change to queue system for multiple images processing
             thumbnailPath = data.getStringExtra(Intents.EXTRA_THUMBNAIL_FILE_PATH);
             String picturePath = data.getStringExtra(Intents.EXTRA_PICTURE_FILE_PATH);
-
-            processPictureWhenReady(picturePath);
+            processArray.add(picturePath);
+            if (!processing) {
+                processPictureWhenReady(processArray.get(0));
+                processing = true;
+            }
             Bitmap thumbnail = BitmapFactory.decodeFile(thumbnailPath);
-            mCards.set(1, new CardBuilder(this, CardBuilder.Layout.CAPTION)
-                    .addImage(thumbnail)
-                    .setFootnote("Tap to take a new picture"));
-            mCards.get(2).setFootnote("Cannot have an image and video at the same time");
-            mCards.get(3).setFootnote("Picture is processing...");
+            insertNewCard(mCards.size() - 2, new CardBuilder(this, CardBuilder.Layout.CAPTION)
+                    .addImage(thumbnail));
+            mCards.get(mCards.size() - 1).setFootnote("Picture is processing...");
             mCardScrollView.setSelection(1);
             mAdapter.notifyDataSetChanged();
         }
@@ -450,56 +485,89 @@ public class PostActivity extends Activity {
             String videoThumbnailPath = data.getStringExtra(Intents.EXTRA_THUMBNAIL_FILE_PATH);
             Bitmap videoThumbnail = BitmapFactory.decodeFile(videoThumbnailPath);
             videoPath = data.getStringExtra(Intents.EXTRA_VIDEO_FILE_PATH);
-            mCards.set(2, new CardBuilder(this, CardBuilder.Layout.CAPTION)
-                    .addImage(videoThumbnail)
-                    .setFootnote("Tap to record a new video"));
-            mCards.get(1).setFootnote("Cannot have an image and video at the same time");
-            mAdapter.notifyDataSetChanged();
+            mCards.remove(1);
+            insertNewCard(mCards.size() - 1, new CardBuilder(this, CardBuilder.Layout.CAPTION)
+                    .addImage(videoThumbnail));
         }
+        if (requestCode == MEDIA_REQUEST && resultCode == RESULT_OK) {
+            if (data.hasExtra("photo")) {
+                takePicture();
+            } else if (data.hasExtra("video")) {
+                takeVideo();
+            } else {
+                File file = new File(data.getStringExtra("file"));
+                int video = 1;
+                if (file.getAbsolutePath().endsWith(".mp4")) {
+                    videoPath = file.getAbsolutePath();
+                    mCards.remove(1);
+                    video = 0;
+                } else {
+                    Bitmap resource = BitmapFactory.decodeFile(file.getAbsolutePath());
+                    image.add(resource);
+                }
+                int finalVideo = video;
+                Glide.with(this)
+                        .asBitmap()
+                        .load(file)
+                        .format(DecodeFormat.PREFER_RGB_565)
+                        .override(640, 360)
+                        .into(new CustomTarget<Bitmap>() {
+                            @Override
+                            public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+                                insertNewCard(mCards.size() - (1 + finalVideo), new CardBuilder(PostActivity.this, CardBuilder.Layout.CAPTION)
+                                        .addImage(resource));
+                            }
 
+                            @Override
+                            public void onLoadCleared(@Nullable Drawable placeholder) {
+                            }
+                        });
+            }
+        }
         super.onActivityResult(requestCode, resultCode, data);
     }
 
     private void processPictureWhenReady(final String picturePath) {
         final File pictureFile = new File(picturePath);
+        Log.i("Picture Path", picturePath);
 
         if (pictureFile.exists()) {
             Log.d(TAG, "Picture file detected: " + pictureFile.getAbsolutePath());
-
-            image = BitmapFactory.decodeFile(picturePath);
-            mCards.get(3).setFootnote("");
-            mAdapter.notifyDataSetChanged();
-            if (image == null) {
-                Log.e(TAG, "Failed to decode bitmap. File may still be incomplete.");
-                return;
-            }
-            Log.d(TAG, "Picture ready");
+            executor.execute(() -> {
+                image.add(BitmapFactory.decodeFile(picturePath));
+                processArray.remove(picturePath);
+                Log.d(TAG, "Picture ready");
+                if (processArray.isEmpty()) {
+                    mCards.get(mCards.size() - 1).setFootnote("");
+                    runOnUiThread(() -> {
+                        mAdapter.notifyDataSetChanged();
+                    });
+                    processing = false;
+                    Log.i("Process picture", "Finished processing last image in array");
+                } else {
+                    processPictureWhenReady(processArray.get(0));
+                    Log.i("Process picture", "Moving onto next image"); // TODO: Check if this works properly
+                }
+            });
         } else {
             Log.d(TAG, "Picture not ready...");
             final File parentDirectory = pictureFile.getParentFile();
             observer = new FileObserver(parentDirectory.getPath(), FileObserver.CLOSE_WRITE | FileObserver.MOVED_TO) {
-                private boolean isFileWritten;
-
                 @Override
                 public void onEvent(int event, String path) {
-                    Log.d(TAG, "Event received: " + event + " Path: " + path);
-                    if (!isFileWritten) {
-                        File affectedFile = new File(parentDirectory, path);
-                        Log.d(TAG, "Affected file path: " + affectedFile.getAbsolutePath());
-                        Log.d(TAG, "Expected file path: " + pictureFile.getAbsolutePath());
+                    if (path == null) return;
 
-                        if (affectedFile.getAbsolutePath().equals(pictureFile.getAbsolutePath())) {
-                            Log.d(TAG, "Picture fully written detected.");
-                            isFileWritten = true;
-                            stopWatching();
-
-                            runOnUiThread(() -> processPictureWhenReady(picturePath));
-                        }
+                    File affectedFile = new File(parentDirectory, path);
+                    if (affectedFile.getAbsolutePath().equals(pictureFile.getAbsolutePath())) {
+                        Log.d(TAG, "Picture fully written: " + picturePath);
+                        stopWatching();
+                        processPictureWhenReady(picturePath);
                     }
                 }
             };
-            Log.d(TAG, "Observing directory for file changes...");
+
             observer.startWatching();
+            Log.d(TAG, "Started observing: " + picturePath);
         }
     }
     public static void makeImageRequest(Bitmap bitmap, String auth, Boolean video,  HttpCallback callback) {
@@ -527,7 +595,10 @@ public class PostActivity extends Activity {
                             .hostnameVerifier(OkHostnameVerifier.INSTANCE)
                             .followRedirects(true)
                             .followSslRedirects(true)
-                            .retryOnConnectionFailure(true);
+                            .retryOnConnectionFailure(true)
+                            .connectTimeout(300, TimeUnit.SECONDS)
+                            .readTimeout(300, TimeUnit.SECONDS)
+                            .writeTimeout(300, TimeUnit.SECONDS);
 
                     OkHttpClient client = builder.build();
                     RequestBody requestBody;
@@ -600,7 +671,6 @@ public class PostActivity extends Activity {
                     } else {
                         Log.e(TAG, "Unsuccessful HTTP Response Code: " + response.code());
                         Log.e(TAG, "Unsuccessful HTTP Response Message: " + response.message());
-                        Log.e("URL", url);
                         Log.e(TAG, "Unsuccessful HTTP Response Body: " + responseBody);
                         return null;
                     }
