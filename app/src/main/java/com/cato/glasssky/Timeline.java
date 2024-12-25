@@ -216,14 +216,16 @@ public class Timeline extends Activity {
                                                     } catch (JSONException e) {
                                                         throw new RuntimeException(e);
                                                     }
-                                                    if(!text.isEmpty()) {
-                                                        extraCards = images.length() + 5;
-                                                        mCardScrollView.setSelection(extraCards - (images.length() + 1));
-                                                    } else {
-                                                        extraCards = images.length() + 4;
-                                                        mCardScrollView.setSelection(extraCards - (images.length()));
-                                                    }
-                                                    mAdapter.notifyDataSetChanged();
+                                                    runOnUiThread(() -> {
+                                                        if(!text.isEmpty()) {
+                                                            extraCards = images.length() + 5;
+                                                            mCardScrollView.setSelection(extraCards - (images.length() + 1));
+                                                        } else {
+                                                            extraCards = images.length() + 4;
+                                                            mCardScrollView.setSelection(extraCards - (images.length()));
+                                                        }
+                                                        mAdapter.notifyDataSetChanged();
+                                                    });
                                                     SetPosts(responseArray);
                                                 }
                                             }
@@ -256,8 +258,10 @@ public class Timeline extends Activity {
                                             } else {
                                                 extraCards = 5;
                                             }
-                                            mCardScrollView.setSelection(extraCards - 2);
-                                            mAdapter.notifyDataSetChanged();
+                                            runOnUiThread(() -> {
+                                                mCardScrollView.setSelection(extraCards - 2);
+                                                mAdapter.notifyDataSetChanged();
+                                            });
                                             SetPosts(responseArray);
                                         }
                                     });
