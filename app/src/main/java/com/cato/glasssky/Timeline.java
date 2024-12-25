@@ -1143,7 +1143,6 @@ public class Timeline extends Activity {
                         Intent videoIntent = new Intent(Timeline.this, VideoActivity.class);
                         videoIntent.putExtra("url", videoUrl);
                         startActivity(videoIntent);
-                        finish();
                     } else if (position >= extraCards || mode.equals("algorithm")) {
                         String posturi = responseArray.getJSONObject(position - extraCards).getJSONObject("post").getString("uri");
                         timelineIntent.putExtra("uri", posturi);
