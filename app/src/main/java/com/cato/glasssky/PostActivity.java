@@ -90,7 +90,7 @@ public class PostActivity extends Activity {
     Bitmap bitmap;
     String text = "";
     String thumbnailPath = "";
-    static String videoPath = ""; //TODO: TEST VIDEO FILE ADDING (AND IMAGE TOO) CHECK CARD POSITION AND REMOVE COMMENT BLOCK
+    static String videoPath = "";
     ArrayList<Bitmap> image = new ArrayList<>();
     ArrayList<String> processArray = new ArrayList<>();
     Boolean processing = false;
