@@ -146,7 +146,7 @@ public class ImageRequest {
     }*/
 
     @GlideModule
-    private static class CustomGlideModule extends AppGlideModule { //TODO: CHECK IF STATIC WORKS
+    private static class CustomGlideModule extends AppGlideModule {
 
         @Override
         public void registerComponents(Context context, Glide glide, Registry registry) {
@@ -155,7 +155,7 @@ public class ImageRequest {
         }
     }
     public static class AspectRatioTransformation extends BitmapTransformation {
-        private static final String ID = "com.yourapp.AspectRatioTransformation";
+        private static final String ID = "com.GlassSky.AspectRatioTransformation";
         private static final byte[] ID_BYTES = ID.getBytes(CHARSET);
 
         private final int targetWidth;
