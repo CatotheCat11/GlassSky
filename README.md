@@ -25,12 +25,12 @@ From the main page, there are three things you can do:
 
 ### Making a new post
 To make a new post, select the New Post card on the main menu.
-You can add three things to your post: text, a photo, and a video.
+You can add three things to your post: text, photos, and a video.
 
-<img width="2620" alt="Post options" src="https://github.com/user-attachments/assets/7860e97e-0c50-4341-ac8f-6b9497e849f6" />
+<img width="1960" alt="Post options" src="https://github.com/user-attachments/assets/10df3505-7ec7-43ed-a501-8c6dabfcdd8e" />
 
 To add text, select the first card in the menu. This will let you speak, and will add the transcribed text to your post.
-You can add either a photo or a video to your post (but not both). To do so, either use the camera button (short press for photo, long press for video) or select the card in the menu.
+You can add either photos or a video to your post (but not both). To do so, either use the camera button (short press for photo, long press for video) or select the Add Media card, which will also let you select from your 10 most recent photos/videos.
 Finally, to post, select the rightmost card.
 ### Viewing a feed
 When you open a feed, you'll see a list of posts. You can swipe through the posts, and tap to view one.
