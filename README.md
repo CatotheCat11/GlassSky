@@ -1,5 +1,5 @@
 # GlassSky
-An app for using Bluesky on the Google Glass XE.
+An app for using Bluesky on the Google Glass.
   
 ## How to setup
 1. Install the app using [`adb`](https://developer.android.com/tools/help/adb.html)
