@@ -692,7 +692,7 @@ public class Timeline extends Activity {
         if (val >= 1000000) {
             return String.format("%.1fM", val / 1000000.0);
         } else if (val >= 1000) {
-            return String.format("%.1fM", val / 1000.0);
+            return String.format("%.1fK", val / 1000.0);
         } else {
             return value;
         }
