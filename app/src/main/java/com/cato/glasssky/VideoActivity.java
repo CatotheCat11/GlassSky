@@ -7,7 +7,9 @@ import android.view.MotionEvent;
 import android.view.WindowManager;
 
 import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.LoadControl;
 import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.ui.PlayerView;
@@ -41,10 +43,20 @@ public class VideoActivity extends Activity {
         DataSource.Factory dataSourceFactory = new DefaultDataSource.Factory(
                 this, new CustomHttpDataSourceFactory(this));
 
+        LoadControl loadControl = new DefaultLoadControl.Builder()
+                .setBufferDurationsMs(
+                        2000,
+                        5000,
+                        1000,
+                        1000)
+                .setPrioritizeTimeOverSizeThresholds(true)
+                .build();
+
         // Initialize ExoPlayer
-        player = new ExoPlayer.Builder(this).setMediaSourceFactory(
-                new com.google.android.exoplayer2.source.DefaultMediaSourceFactory(dataSourceFactory)
-        ).build();
+        player = new ExoPlayer.Builder(this)
+                .setLoadControl(loadControl)
+                .setMediaSourceFactory(new com.google.android.exoplayer2.source.DefaultMediaSourceFactory(dataSourceFactory))
+                .build();
         player.addListener(new Player.Listener() {
             @Override
             public void onPlaybackStateChanged(int state) {
