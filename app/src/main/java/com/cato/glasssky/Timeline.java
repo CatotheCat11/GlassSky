@@ -1128,22 +1128,8 @@ public class Timeline extends Activity {
                                     }
                                 });
                     } else if (position == 5 && !externalUri.isEmpty()) {
-                        PackageManager packageManager = getPackageManager();
-                        String targetPackage = "com.google.glass.browser";
-                        boolean isInstalled = isPackageInstalled(targetPackage, packageManager);
-
-                        if (isInstalled) {
-                            Intent i = new Intent(Intent.ACTION_VIEW);
-                            i.setClassName("com.google.glass.browser", "com.google.glass.browser.WebBrowserActivity");
-                            i.setData(Uri.parse(externalUri));
-                            startActivity(i);
-                        } else {
-                            CharSequence text = "Please install the package com.google.glass.browser";
-                            int duration = Toast.LENGTH_SHORT;
-
-                            Toast toast = Toast.makeText(Timeline.this, text, duration);
-                            toast.show();
-                        }
+                        Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(externalUri));
+                        startActivity(browserIntent);
 
                     } else if (position == 5 && !videoUrl.isEmpty()) { //Play video
                         Intent videoIntent = new Intent(Timeline.this, VideoActivity.class);
