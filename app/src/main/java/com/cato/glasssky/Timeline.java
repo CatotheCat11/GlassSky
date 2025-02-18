@@ -484,8 +484,10 @@ public class Timeline extends Activity {
                                                             .setSubheading("@" + handle)
                                                             .setFootnote(round(followersCount) + " followers, " + round(followsCount) + " following, " + round(postsCount) + " posts");
                                                     mCards.add(authorCard);
-                                                    mAdapter.notifyDataSetChanged();
-                                                    mCardScrollView.setSelection(extraCards - 1);
+                                                    runOnUiThread(() -> {
+                                                        mAdapter.notifyDataSetChanged();
+                                                        mCardScrollView.setSelection(extraCards - 1);
+                                                    });
                                                     HttpsUtils.makePostRequest("https://bsky.social/xrpc/app.bsky.feed.getAuthorFeed?actor=" + uri + "&filter=posts_and_author_threads", null, access_token, "GET",
                                                             new HttpsUtils.HttpCallback() {
 
