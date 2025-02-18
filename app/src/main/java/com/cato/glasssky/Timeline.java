@@ -394,7 +394,7 @@ public class Timeline extends Activity {
                                                                     .addImage(bitmap)
                                                                     .setText(description)
                                                                     .setHeading(displayName)
-                                                                    .setSubheading(handle)
+                                                                    .setSubheading("@" + handle)
                                                                     .setFootnote(round(followersCount) + " followers, " + round(followsCount) + " following, " + round(postsCount) + " posts");
                                                             mCards.add(authorCard);
                                                             runOnUiThread(() -> {
@@ -481,7 +481,7 @@ public class Timeline extends Activity {
                                                     authorCard
                                                             .setText(description)
                                                             .setHeading(displayName)
-                                                            .setSubheading(handle)
+                                                            .setSubheading("@" + handle)
                                                             .setFootnote(round(followersCount) + " followers, " + round(followsCount) + " following, " + round(postsCount) + " posts");
                                                     mCards.add(authorCard);
                                                     mAdapter.notifyDataSetChanged();
@@ -591,7 +591,7 @@ public class Timeline extends Activity {
                     CardBuilder card = new CardBuilder(Timeline.this, CardBuilder.Layout.AUTHOR)
                             .setText(text)
                             .setHeading(heading)
-                            .setSubheading(subHeading)
+                            .setSubheading("@" + subHeading)
                             .setFootnote(round(replyCount) + " \uD83D\uDCAC   " + round(repostCount) + " \uD83D\uDD01   " + round(likeCount) + " \uD83D\uDC95")
                             .setTimestamp(timestamp)
                             .setIcon(R.drawable.person_64);
@@ -1265,7 +1265,7 @@ public class Timeline extends Activity {
                                 CardBuilder card = new CardBuilder(Timeline.this, CardBuilder.Layout.AUTHOR)
                                         .setText(text)
                                         .setHeading(heading)
-                                        .setSubheading(subHeading)
+                                        .setSubheading("@" + subHeading)
                                         .setFootnote(round(replyCount) + " \uD83D\uDCAC   " + round(repostCount) + " \uD83D\uDD01   " + round(likeCount) + " \uD83D\uDC95")
                                         .setTimestamp(timestamp);
                                 if (post.has("embed") && post.getJSONObject("embed").getString("$type").equals("app.bsky.embed.images#view")) {
