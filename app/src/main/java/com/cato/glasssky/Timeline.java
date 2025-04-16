@@ -139,7 +139,7 @@ public class Timeline extends Activity {
                                 String replyCount = mainPost.getString("replyCount");
                                 String repostCount = mainPost.getString("repostCount");
                                 String timestamp = getTimeAgo(mainPost.getString("indexedAt"));
-                                String Avatarurl = mainPost.getJSONObject("author").getString("avatar");
+                                String Avatarurl = mainPost.getJSONObject("author").getString("avatar").replace("/avatar/", "/avatar_thumbnail/");
                                 CardBuilder accountCard = new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
                                         .setText("View account")
                                         .setIcon(R.drawable.person_64);
@@ -332,7 +332,7 @@ public class Timeline extends Activity {
                         public void onSuccess(String response) {
                             try {
                                 Author = new JSONObject(response);
-                                String Avatarurl = Author.getString("avatar");
+                                String Avatarurl = Author.getString("avatar").replace("/avatar/", "/avatar_thumbnail/");
                                 makeImageRequest(Timeline.this, Avatarurl, client, new ImageRequest.ImageCallback() {
                                     @Override
                                     public void onImageLoaded(Bitmap bitmap) {
@@ -598,7 +598,7 @@ public class Timeline extends Activity {
                             .setTimestamp(timestamp)
                             .setIcon(R.drawable.person_64);
                     if (post.getJSONObject("author").has("avatar")) {
-                        String Avatarurl = post.getJSONObject("author").getString("avatar");
+                        String Avatarurl = post.getJSONObject("author").getString("avatar").replace("/avatar/", "/avatar_thumbnail/");
                         makeImageRequest(this, Avatarurl, client, new ImageRequest.ImageCallback() {
                             @Override
                             public void onImageLoaded(Bitmap bitmap) {
