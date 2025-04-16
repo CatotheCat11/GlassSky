@@ -19,7 +19,7 @@ import okhttp3.OkHttpClient;
 public class CustomGlideModule extends AppGlideModule {
     @Override
     public void registerComponents(@NonNull Context context, @NonNull Glide glide, @NonNull Registry registry) {
-        OkHttpClient okHttpClient = ImageRequest.okHttpClient; //TODO test if this works
+        OkHttpClient okHttpClient = ImageRequest.okHttpClient;
         registry.replace(GlideUrl.class, InputStream.class, new OkHttpUrlLoader.Factory(okHttpClient));
     }
 }
