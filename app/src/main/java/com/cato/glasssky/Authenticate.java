@@ -80,10 +80,10 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
                 handle = content.substring(7);
             } else if (content.startsWith("@")) {
                 handle = content.substring(1);
-            }
-            else {
+            } else {
                 handle = content;
             }
+            handle = handle.replaceAll("\\p{C}", ""); // Remove any control characters
             HttpsUtils.makePostRequest("https://bsky.social/xrpc/com.atproto.identity.resolveHandle?handle=" + handle, null, null, "GET",
                     new HttpsUtils.HttpCallback() {
                         @Override
