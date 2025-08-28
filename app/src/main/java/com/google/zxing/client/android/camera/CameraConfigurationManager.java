@@ -167,7 +167,7 @@ final class CameraConfigurationManager {
         Camera.Parameters parameters = camera.getParameters();
         doSetTorch(parameters, newSetting, false);
         camera.setParameters(parameters);
-        googleGlassXE10WorkAround(camera);
+        //googleGlassXE10WorkAround(camera);
     }
 
     private void doSetTorch(Camera.Parameters parameters, boolean newSetting,
@@ -313,7 +313,7 @@ final class CameraConfigurationManager {
 
     private static String findSettableValue(Collection<String> supportedValues,
             String... desiredValues) {
-        Log.i(TAG, "Supported values: " + supportedValues);
+        //Log.i(TAG, "Supported values: " + supportedValues);
         String result = null;
         if (supportedValues != null) {
             for (String desiredValue : desiredValues) {
@@ -323,7 +323,7 @@ final class CameraConfigurationManager {
                 }
             }
         }
-        Log.i(TAG, "Settable value: " + result);
+        //Log.i(TAG, "Settable value: " + result);
         return result;
     }
 
