@@ -3,19 +3,28 @@ package com.cato.glasssky;
 import static android.content.ContentValues.TAG;
 
 import android.app.Activity;
+import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
+import android.media.ThumbnailUtils;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Debug;
+import android.os.Environment;
 import android.os.FileObserver;
 import android.provider.MediaStore;
 import android.speech.RecognizerIntent;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -25,6 +34,7 @@ import android.widget.AdapterView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.FileProvider;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DecodeFormat;
@@ -47,6 +57,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.security.KeyStore;
 import java.security.SecureRandom;
 import java.security.Security;
@@ -87,10 +98,10 @@ public class PostActivity extends Activity {
     private FileObserver observer;
     private Slider mSlider;
     private Slider.Indeterminate mIndeterminate;
-    Bitmap bitmap;
     String text = "";
-    String thumbnailPath = "";
+    Bitmap thumbnail = null;
     static String videoPath = "";
+    Uri imagePath;
     ArrayList<Bitmap> image = new ArrayList<>();
     ArrayList<String> processArray = new ArrayList<>();
     Boolean processing = false;
@@ -100,6 +111,10 @@ public class PostActivity extends Activity {
     String rootcid = "";
     static String did;
     static ExecutorService executor = Executors.newFixedThreadPool(1);
+    static DisplayMetrics displayMetrics = Resources.getSystem().getDisplayMetrics();
+    private File pendingPhotoFile;
+    private Uri pendingPhotoUri;
+    private final Map<String, Integer> pendingCardIndex = new HashMap<>();
 
 
     @Override
@@ -207,7 +222,7 @@ public class PostActivity extends Activity {
                     startActivityForResult(mediaSelect, MEDIA_REQUEST);
                 }
                 if (position == mCards.size() - 1) {
-                    if ((!thumbnailPath.isEmpty() || !videoPath.isEmpty() || !text.isEmpty() || !image.isEmpty())) {
+                    if ((thumbnail != null || !videoPath.isEmpty() || !text.isEmpty() || !image.isEmpty())) {
                         post(text, image, videoPath);
                     }
                 }
@@ -216,6 +231,18 @@ public class PostActivity extends Activity {
     }
     private void takePicture() {
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        String filename = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss", Locale.US).format(new Date()) + ".jpg";
+        pendingPhotoFile = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), filename);
+        pendingPhotoUri = FileProvider.getUriForFile(
+                this,
+                getPackageName() + ".provider",
+                pendingPhotoFile
+        );
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, pendingPhotoUri);
+
+        intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        intent.setClipData(ClipData.newUri(getContentResolver(), "output", pendingPhotoUri));
+
         startActivityForResult(intent, TAKE_PICTURE_REQUEST);
     }
     private void takeVideo() {
@@ -316,7 +343,6 @@ public class PostActivity extends Activity {
                                         } catch (Exception e) {
                                             throw new RuntimeException(e);
                                         }
-                                        Log.i("Success", "Success");
                                     }
 
                                     @Override
@@ -457,18 +483,37 @@ public class PostActivity extends Activity {
     }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == TAKE_PICTURE_REQUEST && resultCode == RESULT_OK) { //TODO: Change to queue system for multiple images processing
-            thumbnailPath = data.getStringExtra(Intents.EXTRA_THUMBNAIL_FILE_PATH);
-            String picturePath = data.getStringExtra(Intents.EXTRA_PICTURE_FILE_PATH);
-            processArray.add(picturePath);
-            if (!processing) {
-                processPictureWhenReady(processArray.get(0));
-                processing = true;
-            }
-            Bitmap thumbnail = BitmapFactory.decodeFile(thumbnailPath);
-            insertNewCard(mCards.size() - 2, new CardBuilder(this, CardBuilder.Layout.CAPTION)
-                    .addImage(thumbnail));
+        Log.d(TAG, "onActivityResult: requestCode=" + requestCode + ", resultCode=" + resultCode);
+        if (requestCode == TAKE_PICTURE_REQUEST && resultCode == RESULT_OK) {
             mCards.get(mCards.size() - 1).setFootnote("Picture is processing...");
+
+            int insertIndex = mCards.size() - 2;
+
+            if (data != null && data.hasExtra(Intents.EXTRA_THUMBNAIL_FILE_PATH)) { // This should run only on the Google Glass XE
+                String thumbnailPath = data.getStringExtra(Intents.EXTRA_THUMBNAIL_FILE_PATH);
+                thumbnail = BitmapFactory.decodeFile(thumbnailPath);
+
+                insertNewCard(insertIndex, new CardBuilder(this, CardBuilder.Layout.CAPTION)
+                        .addImage(thumbnail));
+
+                String picturePath = data.getStringExtra(Intents.EXTRA_PICTURE_FILE_PATH);
+                processArray.add(picturePath);
+                pendingCardIndex.put(picturePath, insertIndex);
+
+            } else { // This runs on other devices
+                insertNewCard(insertIndex, new CardBuilder(this, CardBuilder.Layout.MENU)
+                        .setText("Processing image"));
+
+                String picturePath = pendingPhotoFile.getAbsolutePath();
+                processArray.add(picturePath);
+                pendingCardIndex.put(picturePath, insertIndex);
+            }
+
+            if (!processing) {
+                processing = true;
+                processPictureWhenReady(processArray.get(0));
+            }
+
             mCardScrollView.setSelection(1);
             mAdapter.notifyDataSetChanged();
         }
@@ -482,12 +527,49 @@ public class PostActivity extends Activity {
             mAdapter.notifyDataSetChanged();
         }
         if (requestCode == TAKE_VIDEO_REQUEST && resultCode == RESULT_OK) {
-            String videoThumbnailPath = data.getStringExtra(Intents.EXTRA_THUMBNAIL_FILE_PATH);
-            Bitmap videoThumbnail = BitmapFactory.decodeFile(videoThumbnailPath);
-            videoPath = data.getStringExtra(Intents.EXTRA_VIDEO_FILE_PATH);
             mCards.remove(1);
-            insertNewCard(mCards.size() - 1, new CardBuilder(this, CardBuilder.Layout.CAPTION)
-                    .addImage(videoThumbnail));
+            videoPath = data.getStringExtra(Intents.EXTRA_VIDEO_FILE_PATH);
+            final Bitmap[] videoThumbnail = {null};
+            if (videoPath == null) {
+                if (data.getData() != null) {
+                    videoPath = data.getData().toString();
+                    try {
+                        Glide.with(this)
+                                .asBitmap()
+                                .load(videoPath)
+                                .format(DecodeFormat.PREFER_RGB_565)
+                                .into(new CustomTarget<Bitmap>() {
+                                    @Override
+                                    public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+                                        insertNewCard(mCards.size() - 1, new CardBuilder(PostActivity.this, CardBuilder.Layout.CAPTION)
+                                                .addImage(resource));
+                                        runOnUiThread(() -> {
+                                            mAdapter.notifyDataSetChanged();
+                                        });
+                                    }
+
+                                    @Override
+                                    public void onLoadCleared(@Nullable Drawable placeholder) {
+                                    }
+                                });
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                } else {
+                    Log.e(TAG, "Cannot get video path");
+                    videoPath = "";
+                }
+            } else {
+                String videoThumbnailPath = data.getStringExtra(Intents.EXTRA_THUMBNAIL_FILE_PATH);
+                videoThumbnail[0] = BitmapFactory.decodeFile(videoThumbnailPath);
+                insertNewCard(mCards.size() - 1, new CardBuilder(this, CardBuilder.Layout.CAPTION)
+                        .addImage(videoThumbnail[0]));
+            }
+            runOnUiThread(() -> {
+                mAdapter.notifyDataSetChanged();
+            });
+            Log.d("Video Path", videoPath);
+
         }
         if (requestCode == MEDIA_REQUEST && resultCode == RESULT_OK) {
             if (data.hasExtra("photo")) {
@@ -534,31 +616,50 @@ public class PostActivity extends Activity {
         if (pictureFile.exists()) {
             Log.d(TAG, "Picture file detected: " + pictureFile.getAbsolutePath());
             executor.execute(() -> {
-                image.add(BitmapFactory.decodeFile(picturePath));
+                Bitmap imageBitmap = BitmapFactory.decodeFile(pictureFile.getAbsolutePath());
+                image.add(imageBitmap);
                 processArray.remove(picturePath);
+
+                Integer cardIndex = pendingCardIndex.remove(picturePath);
+                if (cardIndex != null) {
+                    runOnUiThread(() -> {
+                        mCards.set(cardIndex, new CardBuilder(this, CardBuilder.Layout.CAPTION)
+                                .addImage(Bitmap.createScaledBitmap(
+                                        imageBitmap, displayMetrics.widthPixels, displayMetrics.heightPixels, false))); // Reduces resolution to match screen, better for performance
+                        mAdapter.notifyDataSetChanged();
+                    });
+                }
+
                 Log.d(TAG, "Picture ready");
                 if (processArray.isEmpty()) {
                     mCards.get(mCards.size() - 1).setFootnote("");
-                    runOnUiThread(() -> {
-                        mAdapter.notifyDataSetChanged();
-                    });
+                    runOnUiThread(mAdapter::notifyDataSetChanged);
                     processing = false;
                     Log.i("Process picture", "Finished processing last image in array");
                 } else {
                     processPictureWhenReady(processArray.get(0));
-                    Log.i("Process picture", "Moving onto next image"); // TODO: Check if this works properly
+                    Log.i("Process picture", "Moving onto next image");
                 }
             });
         } else {
             Log.d(TAG, "Picture not ready...");
             final File parentDirectory = pictureFile.getParentFile();
-            observer = new FileObserver(parentDirectory.getPath(), FileObserver.CLOSE_WRITE | FileObserver.MOVED_TO) {
-                @Override
-                public void onEvent(int event, String path) {
-                    if (path == null) return;
+            if (parentDirectory == null) {
+                Log.w(TAG, "No parent directory for " + picturePath);
+                return;
+            }
 
-                    File affectedFile = new File(parentDirectory, path);
-                    if (affectedFile.getAbsolutePath().equals(pictureFile.getAbsolutePath())) {
+            observer = new FileObserver(parentDirectory.getPath(),
+                    FileObserver.CLOSE_WRITE | FileObserver.MOVED_TO | FileObserver.CREATE) {
+                @Override
+                public void onEvent(int event, String name) {
+                    if (name == null) return;
+
+                    File affected = new File(parentDirectory, name);
+
+                    // Some camera apps write temp then rename; we accept either a close on the target
+                    // or a move/rename finishing with the exact target name.
+                    if (affected.getAbsolutePath().equals(pictureFile.getAbsolutePath())) {
                         Log.d(TAG, "Picture fully written: " + picturePath);
                         stopWatching();
                         processPictureWhenReady(picturePath);
@@ -645,7 +746,7 @@ public class PostActivity extends Activity {
                         contentType = "image/jpeg";
                         url = "https://bsky.social/xrpc/com.atproto.repo.uploadBlob";
                         Log.d(TAG, "Image file will be uploaded");
-                        byte[] imageBytes = bitmapToByteArray(bitmap, Bitmap.CompressFormat.JPEG, 50);
+                        byte[] imageBytes = bitmapToByteArray(bitmap, Bitmap.CompressFormat.JPEG, 999999);
 
                         // Define the MediaType for the image
                         MediaType mediaType = MediaType.parse("image/jpeg");
@@ -693,10 +794,16 @@ public class PostActivity extends Activity {
             }
         }.execute();
     }
-    // Helper method to convert Bitmap to Byte Array
-    private static byte[] bitmapToByteArray(Bitmap bitmap, Bitmap.CompressFormat format, int quality) {
+    // Helper method to convert Bitmap to Byte Array. Compresses the bitmap to a specified format and size.
+    private static byte[] bitmapToByteArray(Bitmap bitmap, Bitmap.CompressFormat format, int maxBytes) {
+        int quality = 100;
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         bitmap.compress(format, quality, outputStream);
+        while (outputStream.toByteArray().length > maxBytes && quality > 10) {
+            outputStream.reset();
+            quality -= 5;
+            bitmap.compress(format, quality, outputStream);
+        }
         return outputStream.toByteArray();
     }
     public interface HttpCallback {
@@ -721,7 +828,7 @@ public class PostActivity extends Activity {
     }
     public boolean onKeyLongPress(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_CAMERA) {
-            if (thumbnailPath.isEmpty()) {
+            if (thumbnail != null) {
                 takeVideo();
             }
             return true;
