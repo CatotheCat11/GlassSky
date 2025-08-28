@@ -94,7 +94,7 @@ public final class ViewfinderView extends View {
         int width = canvas.getWidth();
         int height = canvas.getHeight();
 
-        paint.setTextSize(24);
+        /*paint.setTextSize(24);
         paint.setTextAlign(Paint.Align.CENTER);
         paint.setColor(Color.WHITE);
         canvas.drawText("Hover over QR code to scan", 320, 317, paint);
@@ -105,7 +105,7 @@ public final class ViewfinderView extends View {
         canvas.drawLine(frame.right - 80, frame.bottom - 20, frame.right - 95, frame.bottom - 20, paint);
         canvas.drawLine(frame.left + 80, frame.bottom - 20, frame.left + 95, frame.bottom - 20, paint);
         canvas.drawLine(frame.right - 80, frame.bottom - 20, frame.right - 80, frame.bottom - 35, paint);
-        canvas.drawLine(frame.left + 80, frame.bottom - 20, frame.left + 80, frame.bottom - 35, paint);
+        canvas.drawLine(frame.left + 80, frame.bottom - 20, frame.left + 80, frame.bottom - 35, paint);*/
 
         if (resultBitmap != null) {
             // Draw the opaque result bitmap over the scanning rectangle

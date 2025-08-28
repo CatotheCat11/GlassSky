@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Map;
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -32,6 +33,7 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.widget.TextView;
 
 import com.github.barcodeeye.BaseGlassActivity;
 import com.cato.glasssky.R;
@@ -120,6 +122,8 @@ public final class CaptureActivity extends BaseGlassActivity implements
         mAmbientLightManager = new AmbientLightManager(this);
 
         mViewfinderView = (ViewfinderView) findViewById(R.id.viewfinder_view);
+        TextView captureText = (TextView) findViewById(R.id.capture_text);
+        captureText.setText(getIntent().getStringExtra("VIEWFINDER_TEXT"));
 
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
         
@@ -305,12 +309,12 @@ public final class CaptureActivity extends BaseGlassActivity implements
 
         Uri imageUri = null;
         String imageName = IMAGE_PREFIX + System.currentTimeMillis() + ".png";
-        Log.v(TAG, "Saving image as: " + imageName);
+        /*Log.v(TAG, "Saving image as: " + imageName);
         try {
             imageUri = mImageManager.saveImage(imageName, barcode);
         } catch (IOException e) {
             Log.e(TAG, "Failed to save image!", e);
-        }
+        }*/
 
         ResultProcessor<?> processor = ResultProcessorFactory
                 .makeResultProcessor(this, rawResult, imageUri);
