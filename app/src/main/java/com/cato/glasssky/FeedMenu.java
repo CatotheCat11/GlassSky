@@ -286,7 +286,9 @@ public class FeedMenu extends Activity {
     }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        recreate();
+        if (requestCode == LOGIN_REQUEST) {
+            recreate();
+        }
         super.onActivityResult(requestCode, resultCode, data);
     }
 }
