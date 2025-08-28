@@ -11,8 +11,8 @@ android {
         minSdk 19
         multiDexEnabled = true
         targetSdk 34
-        versionCode 1
-        versionName "1.1.2"
+        versionCode 120
+        versionName "1.2.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -36,7 +36,6 @@ dependencies {
     implementation libs.core.ktx
     implementation platform(libs.kotlin.bom)
     implementation libs.lifecycle.runtime.ktx
-    implementation files('libs/gdk.jar')
     implementation libs.okhttp
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
@@ -50,5 +49,6 @@ dependencies {
     implementation libs.exoplayer.dash
     implementation libs.glide
     implementation libs.okhttp3.integration
+    implementation libs.circleimageview
     annotationProcessor libs.compiler
 }
