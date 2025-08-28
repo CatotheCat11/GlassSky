@@ -3,7 +3,9 @@ package com.cato.glasssky;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.WindowManager;
 
 import com.google.android.exoplayer2.C;
@@ -31,13 +33,30 @@ public class VideoActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         url = getIntent().getStringExtra("url");
-        setContentView(R.layout.video_card);
+        setContentView(R.layout.video_view);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        getWindow().setFlags(
+                WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
+                WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED
+        );
+
+        if (getActionBar() != null) {
+            getActionBar().hide();
+        }
+
         mGestureDetector = createGestureDetector(this);
 
         playerView = findViewById(R.id.playerView);
         mSlider = Slider.from(playerView);
         mIndeterminate = mSlider.startIndeterminate();
+
+        playerView.setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_IMMERSIVE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN);
 
         // Use the custom HttpDataSource.Factory
         DataSource.Factory dataSourceFactory = new DefaultDataSource.Factory(
@@ -106,6 +125,10 @@ public class VideoActivity extends Activity {
                 } else if (gesture == Gesture.SWIPE_LEFT) {
                     player.seekBack();
                     return true;
+                } else if (gesture == Gesture.SWIPE_DOWN) {
+                    player.stop();
+                    finish();
+                    return true;
                 }
                 return false;
             }
@@ -121,5 +144,16 @@ public class VideoActivity extends Activity {
             return mGestureDetector.onMotionEvent(event);
         }
         return false;
+    }
+
+    /*
+     * Send key events to the gesture detector
+     */
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (mGestureDetector != null) {
+            return mGestureDetector.onKeyEvent(keyCode);
+        }
+        return super.onKeyDown(keyCode, event);
     }
 }

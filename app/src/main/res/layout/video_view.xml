@@ -12,6 +12,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="visible"
-        app:controller_layout_id="@layout/exo_controls"/>
+        android:focusable="false"
+        app:controller_layout_id="@layout/exo_controls" />
 
 </FrameLayout>
