@@ -1,13 +1,19 @@
 package com.cato.glasssky;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
+
+import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.github.barcodeeye.scan.CaptureActivity;
 import com.google.android.glass.media.Sounds;
@@ -27,6 +33,7 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
     private String queuedText;
     private static final int BARCODE_HANDLE_REQUEST = 0;
     private static final int BARCODE_PASSWORD_REQUEST = 1;
+    private static final int CAMERA_REQUEST_CODE = 3;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,15 +70,24 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
         refresh_token = sharedPref.getString(getString(R.string.refresh_token), "unset");
         app_password = sharedPref.getString(getString(R.string.handle), "unset");
         if(handle.equals("unset") | app_password.equals("unset") | refresh_token.equals("unset")) {
-            Intent objIntent = CaptureActivity.newIntent(this, true);
-            objIntent.putExtra("SCAN_MODE", "QR_CODE_MODE");
-            startActivityForResult(objIntent, BARCODE_HANDLE_REQUEST);
-            speak("Scan a QR code with your blue sky handle.");
+            Log.i("Authenticate", "Not logged in.");
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                Log.i("Authenticate", "Requesting camera permission.");
+                ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.CAMERA}, CAMERA_REQUEST_CODE);
+            } else {
+                Log.i("Authenticate", "Camera permission already granted, requesting QR code scan of handle.");
+                Intent objIntent = CaptureActivity.newIntent(this, true);
+                objIntent.putExtra("SCAN_MODE", "QR_CODE_MODE");
+                objIntent.putExtra("VIEWFINDER_TEXT", "Scan a QR code with your Bluesky handle.");
+                startActivityForResult(objIntent, BARCODE_HANDLE_REQUEST);
+                speak("Scan a QR code with your blue sky handle.");
+            }
         } else {
             refreshSession();
             finish();
         }
     }
+    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == BARCODE_HANDLE_REQUEST && resultCode == RESULT_OK) {
             tts.stop();
@@ -84,13 +100,16 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
                 handle = content;
             }
             handle = handle.replaceAll("\\p{C}", ""); // Remove any control characters
+            Log.i("Authenticate", "Handle obtained: " + handle);
             HttpsUtils.makePostRequest("https://bsky.social/xrpc/com.atproto.identity.resolveHandle?handle=" + handle, null, null, "GET",
                     new HttpsUtils.HttpCallback() {
                         @Override
                         public void onSuccess(String response) {
                             // Handle successful response
+                            Log.i("Authenticate", "Handle resolved, requesting QR code scan of app password.");
                             Intent objIntent = CaptureActivity.newIntent(Authenticate.this, true);
                             objIntent.putExtra("SCAN_MODE", "QR_CODE_MODE");
+                            objIntent.putExtra("VIEWFINDER_TEXT", "Scan a QR code with your app password.");
                             startActivityForResult(objIntent, BARCODE_PASSWORD_REQUEST);
                             speak("Scan a QR code with your app password.");
                         }
@@ -98,15 +117,17 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
                         @Override
                         public void onError(String errorMessage) {
                             // Handle error
-                            Log.e("Error", errorMessage);
+                            Log.e("Authenticate", "Error: " + errorMessage);
                             Intent objIntent = CaptureActivity.newIntent(Authenticate.this, true);
                             objIntent.putExtra("SCAN_MODE", "QR_CODE_MODE");
+                            objIntent.putExtra("VIEWFINDER_TEXT", "Scan a QR code with your Bluesky handle.");
                             startActivityForResult(objIntent, BARCODE_HANDLE_REQUEST);
                             speak("Error, please try again. Scan a QR code with your blue sky handle.");
                         }
                     });
         }
         if (requestCode == BARCODE_PASSWORD_REQUEST && resultCode == RESULT_OK) {
+            Log.i("Authenticate", "App password obtained from QR code.");
             tts.stop();
             app_password = data.getStringExtra("result");
             // Create auth session
@@ -122,6 +143,7 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
                     new HttpsUtils.HttpCallback() {
                         @Override
                         public void onSuccess(String response) {
+                            Log.i("Authenticate", "Successfully logged in.");
                             // Handle successful response
                             AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                             am.playSoundEffect(Sounds.SUCCESS);
@@ -135,6 +157,7 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
                                 editor.putString(getString(R.string.refresh_token), new JSONObject(response).getString("refreshJwt"));
                                 editor.apply();
                                 speak("Authentication token set");
+                                setResult(RESULT_OK);
                                 finish();
                             } catch (JSONException e) {
                                 throw new RuntimeException(e);
@@ -144,9 +167,10 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
                         @Override
                         public void onError(String errorMessage) {
                             // Handle error
-                            Log.e("Error", errorMessage);
+                            Log.e("Authenticate", "Error: " + errorMessage);
                             Intent objIntent = CaptureActivity.newIntent(Authenticate.this, true);
                             objIntent.putExtra("SCAN_MODE", "QR_CODE_MODE");
+                            objIntent.putExtra("VIEWFINDER_TEXT", "Scan a QR code with your Bluesky handle.");
                             startActivityForResult(objIntent, BARCODE_HANDLE_REQUEST);
                             speak("Error, please try again. Scan a QR code with your blue sky handle.");
                         }
@@ -155,10 +179,30 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == CAMERA_REQUEST_CODE) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.i("Authenticate", "Camera permission granted, requesting QR code scan of handle.");
+                Intent objIntent = CaptureActivity.newIntent(this, true);
+                objIntent.putExtra("SCAN_MODE", "QR_CODE_MODE");
+                objIntent.putExtra("VIEWFINDER_TEXT", "Scan a QR code with your Bluesky handle.");
+                startActivityForResult(objIntent, BARCODE_HANDLE_REQUEST);
+                speak("Scan a QR code with your blue sky handle.");
+            } else {
+                setResult(RESULT_CANCELED);
+                finish();
+            }
+        }
+    }
+
     public void refreshSession() {
         SharedPreferences sharedPref = Authenticate.this.getSharedPreferences(
                 getString(R.string.auth), Context.MODE_PRIVATE);
         refresh_token = sharedPref.getString(getString(R.string.refresh_token), "unset");
+        //Log.d("Authenticate", "Refreshing session with refresh token: " + refresh_token);
         HttpsUtils.makePostRequest("https://bsky.social/xrpc/com.atproto.server.refreshSession", null, refresh_token, "POST",
                 new HttpsUtils.HttpCallback() {
                     @Override
@@ -169,6 +213,7 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
                             editor.putString(getString(R.string.access_token), new JSONObject(response).getString("accessJwt"));
                             editor.putString(getString(R.string.refresh_token), new JSONObject(response).getString("refreshJwt"));
                             editor.apply();
+                            setResult(RESULT_OK);
                         } catch (JSONException e) {
                             throw new RuntimeException(e);
                         }
@@ -177,7 +222,7 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
                     @Override
                     public void onError(String errorMessage) {
                         if (errorMessage.contains("ExpiredToken")) {
-                            Log.e("Session Refresh Error", "The token has expired.");
+                            Log.e("Authenticate", "Error: The token has expired.");
                             // Attempt to log in again
                             // Create auth session
                             JSONObject login = new JSONObject();
@@ -203,6 +248,7 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
                                                 editor.putString(getString(R.string.refresh_token), new JSONObject(response).getString("refreshJwt"));
                                                 editor.apply();
                                                 speak("Authentication token set");
+                                                setResult(RESULT_OK);
                                                 finish();
                                             } catch (JSONException e) {
                                                 throw new RuntimeException(e);
@@ -212,15 +258,17 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
                                         @Override
                                         public void onError(String errorMessage) {
                                             // Handle error
-                                            Log.e("Error", errorMessage);
+                                            Log.e("Authenticate", "Error" + errorMessage);
                                             AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                                             am.playSoundEffect(Sounds.ERROR);
+                                            setResult(RESULT_CANCELED);
                                         }
                                     });
                         } else {
-                            Log.e("Session Refresh Error", errorMessage);
+                            Log.e("Authenticate", "Session refresh error: " + errorMessage);
                             AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                             am.playSoundEffect(Sounds.ERROR);
+                            setResult(RESULT_CANCELED);
                         }
                     }
                 });

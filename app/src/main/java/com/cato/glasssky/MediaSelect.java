@@ -1,11 +1,14 @@
 package com.cato.glasssky;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -15,11 +18,14 @@ import android.widget.AdapterView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DecodeFormat;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
+import com.github.barcodeeye.scan.CaptureActivity;
 import com.google.android.glass.media.Sounds;
 import com.google.android.glass.widget.CardBuilder;
 import com.google.android.glass.widget.CardScrollAdapter;
@@ -39,6 +45,7 @@ public class MediaSelect extends Activity {
     Intent intent;
     List<File> fileList;
     int video = 0;
+    int PERMISSION_REQUEST_CODE = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,7 +59,21 @@ public class MediaSelect extends Activity {
         mCardScrollView.setAdapter(mAdapter);
         mCardScrollView.activate();
         setupClickListener();
-        getMediaFiles();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_VIDEO) != PackageManager.PERMISSION_GRANTED) {
+                Log.i("MediaSelect", "Requesting permission to read media images and videos");
+                ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO}, PERMISSION_REQUEST_CODE);
+            } else {
+                getMediaFiles();
+            }
+        } else {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                Log.i("MediaSelect", "Requesting permission to read external storage");
+                ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE);
+            } else {
+                getMediaFiles();
+            }
+        }
         setContentView(mCardScrollView);
     }
 
@@ -76,7 +97,7 @@ public class MediaSelect extends Activity {
         File dcimDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "/Camera");
         Log.i("MediaSelector", "DCIM directory: " + dcimDir);
 
-        if (dcimDir != null && dcimDir.exists() && dcimDir.isDirectory()) {
+        if (dcimDir.exists() && dcimDir.isDirectory()) {
             // Get all files in the DCIM directory
             File[] files = dcimDir.listFiles();
             Log.i("MediaSelector", "Number of files in DCIM directory: " + files.length);
@@ -174,5 +195,18 @@ public class MediaSelect extends Activity {
                 }
             }
         });
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.i("MediaSelect", "Permission granted to read media images and videos");
+                getMediaFiles();
+            } else {
+                Log.w("MediaSelect", "Permission denied to read media images and videos");
+            }
+        }
     }
 }
