@@ -67,6 +67,7 @@ public class Timeline extends Activity {
     static int REPLY_REQUEST = 0;
     OkHttpClient client;
     static final int limit = 10;
+    int batchImages = 0;
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
 
     @Override
@@ -102,7 +103,9 @@ public class Timeline extends Activity {
                             // Handle successful response
                             try {
                                 JSONObject responseObj = new JSONObject(response);
-                                cursor = responseObj.getString("cursor");
+                                if (responseObj.has("cursor")) {
+                                    cursor = responseObj.getString("cursor");
+                                } else cursor = "";
                                 responseArray = responseObj.getJSONArray("feed");
                                 extraCards = 0;
                                 SetPosts(responseArray);
@@ -599,10 +602,16 @@ public class Timeline extends Activity {
                             .setIcon(R.drawable.person_64);
                     if (post.getJSONObject("author").has("avatar")) {
                         String Avatarurl = post.getJSONObject("author").getString("avatar").replace("/avatar/", "/avatar_thumbnail/");
+                        int finalI = i;
                         makeImageRequest(this, Avatarurl, client, new ImageRequest.ImageCallback() {
                             @Override
                             public void onImageLoaded(Bitmap bitmap) {
                                 card.setIcon(bitmap);
+                                runOnUiThread(() -> {
+                                    if (finalI == postsArray.length() - 1) { // Refresh cards when last avatar icon has been loaded
+                                        mAdapter.notifyDataSetChanged();
+                                    }
+                                });
                             }
                         });
 
@@ -1136,6 +1145,7 @@ public class Timeline extends Activity {
                         videoIntent.putExtra("url", videoUrl);
                         startActivity(videoIntent);
                     } else if (position >= extraCards || mode.equals("algorithm")) {
+                        Log.d("Timeline", "Clicked on post at position: " + position);
                         String posturi = responseArray.getJSONObject(position - extraCards).getJSONObject("post").getString("uri");
                         timelineIntent.putExtra("uri", posturi);
                         timelineIntent.putExtra("mode", "post");
@@ -1159,8 +1169,10 @@ public class Timeline extends Activity {
         mCardScrollView.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                //Log.i("Timeline", "Item selected at position: " + position);
                 if (position >= mCards.size() - 5 && !loading && !cursor.isEmpty()) {
                     if (mode.equals("algorithm")) {
+                        Log.i("Timeline", "Loading more posts");
                         loading = true;
                         mCards.add(new CardBuilder(Timeline.this, CardBuilder.Layout.MENU)
                                 .setText("Loading"));
@@ -1172,7 +1184,9 @@ public class Timeline extends Activity {
                                         mCards.remove(mCards.size() - 1);
                                         try {
                                             JSONObject responseObj = new JSONObject(response);
-                                            cursor = responseObj.getString("cursor");
+                                            if (responseObj.has("cursor")) {
+                                                cursor = responseObj.getString("cursor");
+                                            } else cursor = "";
                                             JSONArray newResponseArray = responseObj.getJSONArray("feed");
                                             for (int i = 0; i < newResponseArray.length(); i++) {
                                                 responseArray.put(newResponseArray.get(i));
@@ -1197,6 +1211,7 @@ public class Timeline extends Activity {
                                 });
                     }
                     if (mode.equals("author")) {
+                        Log.i("Timeline", "Loading more posts");
                         loading = true;
                         HttpsUtils.makePostRequest("https://bsky.social/xrpc/app.bsky.feed.getAuthorFeed?actor=" + uri + "&cursor=" + cursor + "&filter=posts_and_author_threads&limit=" + limit, null, access_token, "GET",
                                 new HttpsUtils.HttpCallback() {
