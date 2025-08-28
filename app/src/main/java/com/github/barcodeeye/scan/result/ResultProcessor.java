@@ -1,5 +1,7 @@
 package com.github.barcodeeye.scan.result;
 
+import static android.app.PendingIntent.FLAG_IMMUTABLE;
+
 import java.util.List;
 
 import android.annotation.SuppressLint;
@@ -50,6 +52,6 @@ public abstract class ResultProcessor<T extends ParsedResult> {
     @SuppressLint("UnspecifiedImmutableFlag")
     public static PendingIntent createPendingIntent(Context context,
                                                     Intent intent) {
-        return PendingIntent.getActivity(context, 0, intent, 0);
+        return PendingIntent.getActivity(context, 0, intent, FLAG_IMMUTABLE);
     }
 }
