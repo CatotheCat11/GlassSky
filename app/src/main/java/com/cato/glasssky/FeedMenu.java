@@ -117,7 +117,7 @@ public class FeedMenu extends Activity {
 
                                         @Override
                                         public void onError(String errorMessage) {
-                                            Log.e("An error occurred", errorMessage);
+                                            Log.e("FeedMenu", errorMessage);
                                         }
                                     });
                             for (int i = 0; i < pinned.length(); i++) {
@@ -229,7 +229,7 @@ public class FeedMenu extends Activity {
 
                                 @Override
                                 public void onError(String errorMessage) {
-                                    Log.e("Error", errorMessage);
+                                    Log.e("FeedMenu", errorMessage);
                                 }
                     });
                 } else {
@@ -286,7 +286,7 @@ public class FeedMenu extends Activity {
     }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == LOGIN_REQUEST) {
+        if (requestCode == LOGIN_REQUEST && resultCode == RESULT_OK) {
             recreate();
         }
         super.onActivityResult(requestCode, resultCode, data);
