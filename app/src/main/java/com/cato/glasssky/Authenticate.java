@@ -156,7 +156,7 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
                                 editor.putString(getString(R.string.access_token), new JSONObject(response).getString("accessJwt"));
                                 editor.putString(getString(R.string.refresh_token), new JSONObject(response).getString("refreshJwt"));
                                 editor.apply();
-                                speak("Authentication token set");
+                                Log.i("Authenticate", "Authentication token set");
                                 setResult(RESULT_OK);
                                 finish();
                             } catch (JSONException e) {
@@ -222,8 +222,7 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
                     @Override
                     public void onError(String errorMessage) {
                         if (errorMessage.contains("ExpiredToken")) {
-                            Log.e("Authenticate", "Error: The token has expired.");
-                            // Attempt to log in again
+                            Log.i("Authenticate", "The token has expired. Trying to log in again.");
                             // Create auth session
                             JSONObject login = new JSONObject();
                             try {
@@ -247,7 +246,7 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
                                                 editor.putString(getString(R.string.access_token), new JSONObject(response).getString("accessJwt"));
                                                 editor.putString(getString(R.string.refresh_token), new JSONObject(response).getString("refreshJwt"));
                                                 editor.apply();
-                                                speak("Authentication token set");
+                                                Log.i("Authenticate", "Authentication token set");
                                                 setResult(RESULT_OK);
                                                 finish();
                                             } catch (JSONException e) {
