@@ -36,6 +36,7 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.i("Authenticate", "Starting authentication.");
         /*
         HttpsUtils.makePostRequest("https://api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=catothecat.bsky.social", null, null, "GET",
             new HttpsUtils.HttpCallback() {
@@ -81,7 +82,6 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
             }
         } else {
             refreshSession();
-            finish();
         }
     }
     @Override
@@ -209,6 +209,7 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
                             editor.putString(getString(R.string.refresh_token), new JSONObject(response).getString("refreshJwt"));
                             editor.apply();
                             setResult(RESULT_OK);
+                            finish();
                         } catch (JSONException e) {
                             throw new RuntimeException(e);
                         }
@@ -219,6 +220,7 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
                         Log.d("Authenticate", errorMessage);
                         if (errorMessage.contains("ExpiredToken")) {
                             Log.i("Authenticate", "The refresh token has expired. Need to login again.");
+                            // Clear stored credentials
                             SharedPreferences sharedPref = Authenticate.this.getSharedPreferences(
                                     getString(R.string.auth), Context.MODE_PRIVATE);
                             SharedPreferences.Editor editor = sharedPref.edit();
@@ -241,6 +243,7 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
                             AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                             am.playSoundEffect(Sounds.ERROR);
                             setResult(RESULT_CANCELED);
+                            finish();
                         }
                     }
                 });
