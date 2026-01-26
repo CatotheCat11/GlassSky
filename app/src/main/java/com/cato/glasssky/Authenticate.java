@@ -26,8 +26,6 @@ import java.util.Locale;
 public class Authenticate extends Activity implements TextToSpeech.OnInitListener {
     String handle;
     String refresh_token;
-    String app_password;
-    String access_token;
     private TextToSpeech tts;
     private boolean initialized = false;
     private String queuedText;
@@ -68,8 +66,7 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
 
         handle = sharedPref.getString(getString(R.string.handle), "unset");
         refresh_token = sharedPref.getString(getString(R.string.refresh_token), "unset");
-        app_password = sharedPref.getString(getString(R.string.handle), "unset");
-        if(handle.equals("unset") | app_password.equals("unset") | refresh_token.equals("unset")) {
+        if(handle.equals("unset") | refresh_token.equals("unset")) {
             Log.i("Authenticate", "Not logged in.");
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
                 Log.i("Authenticate", "Requesting camera permission.");
@@ -129,12 +126,11 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
         if (requestCode == BARCODE_PASSWORD_REQUEST && resultCode == RESULT_OK) {
             Log.i("Authenticate", "App password obtained from QR code.");
             tts.stop();
-            app_password = data.getStringExtra("result");
             // Create auth session
             JSONObject login = new JSONObject();
             try {
                 login.put("identifier", handle);
-                login.put("password", app_password);
+                login.put("password", data.getStringExtra("result"));
             } catch (JSONException e) {
                 throw new RuntimeException(e);
             }
@@ -151,7 +147,6 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
                                     getString(R.string.auth), Context.MODE_PRIVATE);
                             SharedPreferences.Editor editor = sharedPref.edit();
                             editor.putString(getString(R.string.handle), handle);
-                            editor.putString(getString(R.string.app_password), app_password);
                             try {
                                 editor.putString(getString(R.string.access_token), new JSONObject(response).getString("accessJwt"));
                                 editor.putString(getString(R.string.refresh_token), new JSONObject(response).getString("refreshJwt"));
@@ -221,48 +216,26 @@ public class Authenticate extends Activity implements TextToSpeech.OnInitListene
 
                     @Override
                     public void onError(String errorMessage) {
+                        Log.d("Authenticate", errorMessage);
                         if (errorMessage.contains("ExpiredToken")) {
-                            Log.i("Authenticate", "The token has expired. Trying to log in again.");
-                            // Create auth session
-                            JSONObject login = new JSONObject();
-                            try {
-                                login.put("identifier", handle);
-                                login.put("password", app_password);
-                            } catch (JSONException e) {
-                                throw new RuntimeException(e);
+                            Log.i("Authenticate", "The refresh token has expired. Need to login again.");
+                            SharedPreferences sharedPref = Authenticate.this.getSharedPreferences(
+                                    getString(R.string.auth), Context.MODE_PRIVATE);
+                            SharedPreferences.Editor editor = sharedPref.edit();
+                            editor.clear();
+                            editor.apply();
+                            // Log in again
+                            if (ContextCompat.checkSelfPermission(Authenticate.this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                                Log.i("Authenticate", "Requesting camera permission.");
+                                ActivityCompat.requestPermissions(Authenticate.this, new String[] {Manifest.permission.CAMERA}, CAMERA_REQUEST_CODE);
+                            } else {
+                                Log.i("Authenticate", "Camera permission already granted, requesting QR code scan of handle.");
+                                Intent objIntent = CaptureActivity.newIntent(Authenticate.this, true);
+                                objIntent.putExtra("SCAN_MODE", "QR_CODE_MODE");
+                                objIntent.putExtra("VIEWFINDER_TEXT", "Scan a QR code with your Bluesky handle.");
+                                startActivityForResult(objIntent, BARCODE_HANDLE_REQUEST);
+                                speak("Scan a QR code with your blue sky handle.");
                             }
-
-                            HttpsUtils.makePostRequest("https://bsky.social/xrpc/com.atproto.server.createSession", login, null, "POST",
-                                    new HttpsUtils.HttpCallback() {
-                                        @Override
-                                        public void onSuccess(String response) {
-                                            // Handle successful response
-                                            SharedPreferences sharedPref = Authenticate.this.getSharedPreferences(
-                                                    getString(R.string.auth), Context.MODE_PRIVATE);
-                                            SharedPreferences.Editor editor = sharedPref.edit();
-                                            editor.putString(getString(R.string.handle), handle);
-                                            editor.putString(getString(R.string.app_password), app_password);
-                                            try {
-                                                editor.putString(getString(R.string.access_token), new JSONObject(response).getString("accessJwt"));
-                                                editor.putString(getString(R.string.refresh_token), new JSONObject(response).getString("refreshJwt"));
-                                                editor.apply();
-                                                Log.i("Authenticate", "Authentication token set");
-                                                setResult(RESULT_OK);
-                                                finish();
-                                            } catch (JSONException e) {
-                                                throw new RuntimeException(e);
-                                            }
-                                        }
-
-                                        @Override
-                                        public void onError(String errorMessage) {
-                                            // Handle error
-                                            Log.e("Authenticate", "Error" + errorMessage);
-                                            AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                                            am.playSoundEffect(Sounds.ERROR);
-                                            setResult(RESULT_CANCELED);
-                                        }
-                                    });
                         } else {
                             Log.e("Authenticate", "Session refresh error: " + errorMessage);
                             AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
