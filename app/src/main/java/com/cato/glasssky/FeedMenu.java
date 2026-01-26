@@ -252,17 +252,40 @@ public class FeedMenu extends Activity {
 
                 @Override
                 public void onGracePeriodEnd() {
-                    // Log out.
+                    // Log out, delete session and clear SharedPreferences.
+
                     SharedPreferences sharedPref = FeedMenu.this.getSharedPreferences(
                             getString(R.string.auth), Context.MODE_PRIVATE);
-                    SharedPreferences.Editor editor = sharedPref.edit();
-                    editor.clear();
-                    editor.apply();
-                    // Play a SUCCESS sound to indicate the end of the grace period.
-                    AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                    am.playSoundEffect(Sounds.SUCCESS);
-                    mGracePeriod = null;
-                    finish();
+
+                    String refresh_token = sharedPref.getString(getString(R.string.refresh_token), "unset");
+                    HttpsUtils.makePostRequest("https://bsky.social/xrpc/com.atproto.server.deleteSession", null, refresh_token, "POST",
+                            new HttpsUtils.HttpCallback() {
+                                @Override
+                                public void onSuccess(String response) {
+                                    Log.i("FeedMenu", "Session deleted.");
+                                    SharedPreferences.Editor editor = sharedPref.edit();
+                                    editor.clear();
+                                    editor.apply();
+                                    // Play a SUCCESS sound to indicate the end of the grace period.
+                                    AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                                    am.playSoundEffect(Sounds.SUCCESS);
+                                    mGracePeriod = null;
+                                    finish();
+                                }
+
+                                @Override
+                                public void onError(String errorMessage) {
+                                    Log.e("FeedMenu", errorMessage);
+                                    SharedPreferences.Editor editor = sharedPref.edit();
+                                    editor.clear();
+                                    editor.apply();
+                                    // Play a SUCCESS sound to indicate the end of the grace period.
+                                    AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                                    am.playSoundEffect(Sounds.SUCCESS);
+                                    mGracePeriod = null;
+                                    finish();
+                                }
+                            });
                 }
 
                 @Override
