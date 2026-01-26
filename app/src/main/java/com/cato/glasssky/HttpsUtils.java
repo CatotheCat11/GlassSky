@@ -40,6 +40,7 @@ public class HttpsUtils {
                 try {
                     getClient();
                     Request request = null;
+                    Log.i(TAG, "URL: " + url);
                     if (auth == null) {
                         if (method.equals("GET")) {
                             request = new Request.Builder()
@@ -93,10 +94,11 @@ public class HttpsUtils {
                     Response response = client.newCall(request).execute();
 
                     if (!response.isSuccessful()) {
+                        String errorBody = response.body().string();
                         Log.e(TAG, "Unsuccessful HTTP Response Code: " + response.code());
                         Log.e(TAG, "Unsuccessful HTTP Response Message: " + response.message());
-                        Log.e(TAG, "Unsuccessful HTTP Response Body: " + response.body().string());
-                        return "Error in response: " + response.code();
+                        Log.e(TAG, "Unsuccessful HTTP Response Body: " + errorBody);
+                        return "Error in response: " + errorBody;
                     }
 
                     return response.body().string();
