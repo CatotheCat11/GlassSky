@@ -91,20 +91,16 @@ public class FeedMenu extends Activity {
                                             // Handle successful response
                                             try {
                                                 if (mCards.size() != 1) { //In case user is in the middle of logging out
-                                                    mCards.remove(mCards.size() - 1); //Run twice to remove log out and loading cards
-                                                    mCards.remove(mCards.size() - 1);
+                                                    mCards.remove(2); //Remove "Loading feeds" card
                                                     JSONArray feedArray = new JSONObject(response).getJSONArray("feeds");
                                                     for (int i = 0; i < feedArray.length(); i++) {
                                                         JSONObject feed = feedArray.getJSONObject(i);
                                                         String displayName = feed.getString("displayName");
                                                         String description = feed.getString("description");
-                                                        mCards.add(new CardBuilder(FeedMenu.this, CardBuilder.Layout.MENU)
+                                                        mCards.add(i + 2, new CardBuilder(FeedMenu.this, CardBuilder.Layout.MENU)
                                                                 .setText(displayName)
                                                                 .setFootnote(description));
                                                     }
-                                                    mCards.add(new CardBuilder(FeedMenu.this, CardBuilder.Layout.MENU)
-                                                            .setText("Log out")
-                                                            .setIcon(R.drawable.logout_64));
                                                     if (mCardScrollView.getSelectedItemPosition() == 3) {
                                                         mCardScrollView.setSelection(mCards.size() - 1);
                                                     }
@@ -309,8 +305,13 @@ public class FeedMenu extends Activity {
     }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == LOGIN_REQUEST && resultCode == RESULT_OK) {
-            recreate();
+        if (requestCode == LOGIN_REQUEST) {
+            if (resultCode == RESULT_OK) {
+                recreate();
+            } else if (mCards.size() != 1) {
+                mCards.set(2, new CardBuilder(this, CardBuilder.Layout.MENU)
+                        .setText("An error occurred"));
+            }
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
