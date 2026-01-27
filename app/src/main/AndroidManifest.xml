@@ -56,6 +56,10 @@
             android:theme="@style/AppTheme"
             android:exported="true"/>
         <activity
+            android:name=".SearchActivity"
+            android:theme="@style/AppTheme"
+            android:exported="true"/>
+        <activity
             android:name="com.github.barcodeeye.scan.CaptureActivity"
             android:clearTaskOnLaunch="true"
             android:configChanges="orientation|keyboardHidden"

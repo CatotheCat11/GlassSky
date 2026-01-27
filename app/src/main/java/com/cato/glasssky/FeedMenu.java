@@ -91,17 +91,17 @@ public class FeedMenu extends Activity {
                                             // Handle successful response
                                             try {
                                                 if (mCards.size() != 1) { //In case user is in the middle of logging out
-                                                    mCards.remove(2); //Remove "Loading feeds" card
+                                                    mCards.remove(3); //Remove "Loading feeds" card
                                                     JSONArray feedArray = new JSONObject(response).getJSONArray("feeds");
                                                     for (int i = 0; i < feedArray.length(); i++) {
                                                         JSONObject feed = feedArray.getJSONObject(i);
                                                         String displayName = feed.getString("displayName");
                                                         String description = feed.getString("description");
-                                                        mCards.add(i + 2, new CardBuilder(FeedMenu.this, CardBuilder.Layout.MENU)
+                                                        mCards.add(i + 3, new CardBuilder(FeedMenu.this, CardBuilder.Layout.MENU)
                                                                 .setText(displayName)
                                                                 .setFootnote(description));
                                                     }
-                                                    if (mCardScrollView.getSelectedItemPosition() == 3) {
+                                                    if (mCardScrollView.getSelectedItemPosition() == 4) {
                                                         mCardScrollView.setSelection(mCards.size() - 1);
                                                     }
                                                     mAdapter.notifyDataSetChanged();
@@ -139,6 +139,9 @@ public class FeedMenu extends Activity {
         mCards.add(new CardBuilder(this, CardBuilder.Layout.MENU)
                 .setText("Profile")
                 .setIcon(R.drawable.person_64));
+        mCards.add(new CardBuilder(this, CardBuilder.Layout.MENU)
+                .setText("Search")
+                .setIcon(R.drawable.search_64));
         mCards.add(new CardBuilder(this, CardBuilder.Layout.MENU)
                 .setText("Loading feeds"));
         mCards.add(new CardBuilder(this, CardBuilder.Layout.MENU)
@@ -228,12 +231,15 @@ public class FeedMenu extends Activity {
                                     Log.e("FeedMenu", errorMessage);
                                 }
                     });
+                } else if (position == 2) {
+                    Intent searchIntent = new Intent(FeedMenu.this, SearchActivity.class);
+                    startActivity(searchIntent);
                 } else {
                     if (pinned != null) {
                         Intent timelineIntent = new Intent(FeedMenu.this, Timeline.class);
                         timelineIntent.putExtra("mode", "algorithm");
                         try {
-                            timelineIntent.putExtra("uri", pinned.getString(position - 2));
+                            timelineIntent.putExtra("uri", pinned.getString(position - 3));
                         } catch (JSONException e) {
                             throw new RuntimeException(e);
                         }
@@ -309,7 +315,7 @@ public class FeedMenu extends Activity {
             if (resultCode == RESULT_OK) {
                 recreate();
             } else if (mCards.size() != 1) {
-                mCards.set(2, new CardBuilder(this, CardBuilder.Layout.MENU)
+                mCards.set(3, new CardBuilder(this, CardBuilder.Layout.MENU)
                         .setText("An error occurred"));
             }
         }

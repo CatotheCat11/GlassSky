@@ -532,6 +532,38 @@ public class Timeline extends Activity {
                         }
                     });
         }
+        if (mode.equals("search")) {
+            String query = getIntent().getStringExtra("query");
+            String searchType = getIntent().getStringExtra("searchType");
+            HttpsUtils.makePostRequest("https://bsky.social/xrpc/app.bsky.feed.searchPosts?q=" + query + "&sort=" + searchType, null, access_token, "GET",
+                    new HttpsUtils.HttpCallback() {
+                        @Override
+                        public void onSuccess(String response) {
+                            try {
+                                JSONObject responseObj = new JSONObject(response);
+                                if (responseObj.has("cursor")) {
+                                    cursor = responseObj.getString("cursor");
+                                } else cursor = "";
+                                responseArray = responseObj.getJSONArray("posts");
+                                extraCards = 0;
+                                SetPosts(responseArray);
+                            } catch (JSONException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+
+                        @Override
+                        public void onError(String errorMessage) {
+                            if (errorMessage.contains("ExpiredToken")) {
+                                Log.e("Session Refresh Error", "The token has expired.");
+                                Intent intent = new Intent(Timeline.this, Authenticate.class);
+                                startActivity(intent);
+                            } else {
+                                Log.e("Session Refresh Error", "An error occurred.");
+                            }
+                        }
+                    });
+        }
     }
 
     private class ExampleCardScrollAdapter extends CardScrollAdapter {
@@ -582,7 +614,10 @@ public class Timeline extends Activity {
         Executors.newSingleThreadExecutor().execute(() -> {
             try {
                 for (int i = 0; i < postsArray.length(); i++) {
-                    JSONObject post = postsArray.getJSONObject(i).getJSONObject("post");
+                    JSONObject post = mode.equals("search")
+                            ? postsArray.getJSONObject(i)
+                            : postsArray.getJSONObject(i).getJSONObject("post");
+
                     String text = post.getJSONObject("record").getString("text");
                     String heading = "";
                     if (post.getJSONObject("author").has("displayName")) {
