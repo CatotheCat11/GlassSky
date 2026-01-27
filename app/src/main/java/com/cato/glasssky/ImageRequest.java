@@ -62,10 +62,7 @@ public class ImageRequest {
                     .load(url)
                     .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
                     .apply(requestOptions)
-                    .transform(new AspectRatioTransformation(
-                            url.startsWith("https://cdn.bsky.app/img/avatar") ? 64 : displayMetrics.widthPixels,
-                            url.startsWith("https://cdn.bsky.app/img/avatar") ? 64 : displayMetrics.heightPixels
-                    ))
+                    .transform(new AspectRatioTransformation(url))
                     .into(new CustomTarget<Bitmap>() { // Use CustomTarget to handle the Bitmap directly
                         @Override
                         public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
@@ -98,9 +95,17 @@ public class ImageRequest {
         private final int targetWidth;
         private final int targetHeight;
 
-        public AspectRatioTransformation(int targetWidth, int targetHeight) {
-            this.targetWidth = targetWidth;
-            this.targetHeight = targetHeight;
+        public AspectRatioTransformation(String url) {
+            if (url.startsWith("https://cdn.bsky.app/img/avatar")) { // Use lower resolution for avatars
+                this.targetWidth = 64;
+                this.targetHeight = 64;
+            } else if (url.startsWith("https://cdn.bsky.app/img/banner")) { // Make banners fill screen
+                this.targetWidth = displayMetrics.heightPixels*3;
+                this.targetHeight = displayMetrics.heightPixels;
+            } else {
+                this.targetWidth = displayMetrics.widthPixels;
+                this.targetHeight = displayMetrics.heightPixels;
+            }
         }
 
         @Override
