@@ -33,6 +33,7 @@ android {
 }
 
 dependencies {
+    implementation libs.openprism
     implementation libs.core.ktx
     implementation platform(libs.kotlin.bom)
     implementation libs.lifecycle.runtime.ktx

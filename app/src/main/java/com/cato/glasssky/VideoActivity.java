@@ -135,9 +135,7 @@ public class VideoActivity extends Activity {
         });
         return gestureDetector;
     }
-    /*
-     * Send generic motion events to the gesture detector
-     */
+    /* Send generic motion events to the gesture detector */
     @Override
     public boolean onGenericMotionEvent(MotionEvent event) {
         if (mGestureDetector != null) {
@@ -146,14 +144,9 @@ public class VideoActivity extends Activity {
         return false;
     }
 
-    /*
-     * Send key events to the gesture detector
-     */
+    /* Forward touch events to the gesture detector */
     @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (mGestureDetector != null) {
-            return mGestureDetector.onKeyEvent(keyCode);
-        }
-        return super.onKeyDown(keyCode, event);
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        return onGenericMotionEvent(event);
     }
 }
