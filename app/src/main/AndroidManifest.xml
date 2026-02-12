@@ -20,6 +20,9 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:hardwareAccelerated="true">
+        <meta-data
+            android:name="com.google.android.glass.TouchEnabledApplication"
+            android:value="true" />
         <activity
             android:name=".FeedMenu"
             android:exported="true"
@@ -30,6 +33,7 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
                 <action android:name="com.google.android.glass.action.VOICE_TRIGGER" />
+                <category android:name="com.google.android.glass.category.DIRECTORY"/>
             </intent-filter>
             <meta-data
                 android:name="com.google.android.glass.VoiceTrigger"
